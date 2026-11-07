@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en-NZ">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dental notes</title>
+<style>
+:root{--paper:#EEF1F0;--surface:#FFFFFF;--ink:#1C2A30;--muted:#5E6E75;--line:#D3DCDB;--accent:#1F6470;--accent-ink:#FFFFFF;--ok:#2F6B3B;
+  --sans:"Segoe UI Variable Text","Segoe UI",-apple-system,BlinkMacSystemFont,system-ui,sans-serif;color-scheme:light;box-sizing:border-box}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--paper:#121A1D;--surface:#19242A;--ink:#E3EBEB;--muted:#93A4AA;--line:#2D3D44;--accent:#6FC2C6;--accent-ink:#0E1B1E;--ok:#8DCB97;color-scheme:dark}}
+:root[data-theme="dark"]{--paper:#121A1D;--surface:#19242A;--ink:#E3EBEB;--muted:#93A4AA;--line:#2D3D44;--accent:#6FC2C6;--accent-ink:#0E1B1E;--ok:#8DCB97;color-scheme:dark}
+*,*::before,*::after{box-sizing:inherit}
+html,body{height:100%;margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px)}
+nav{display:flex;align-items:center;gap:4px;padding:8px 20px 0;background:var(--surface);border-bottom:1px solid var(--line);overflow-x:auto;flex:none}
+nav strong{margin-right:14px;font-size:.95rem;white-space:nowrap}
+.beta{font-weight:400;color:var(--muted);font-size:.85rem}
+.tab{border:0;background:none;font:inherit;font-size:.95rem;color:var(--muted);padding:10px 14px 11px;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap}
+.tab.right{margin-left:auto}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{color:var(--ink);font-weight:700;border-bottom-color:var(--accent)}
+.tab:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
+main{flex:1;position:relative;min-height:0}
+iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:none;background:var(--paper)}
+iframe.on{display:block}
+#p-info{position:absolute;inset:0;overflow:auto;display:none;padding:28px 28px 60px}
+#p-info.on{display:block}
+.card{max-width:560px}
+.card h1{margin:0 0 6px;font-size:1.5rem}
+.card p{color:var(--muted);margin:0 0 22px;line-height:1.45}
+.card label{display:block;font-weight:600;margin:0 0 6px}
+.card small{display:block;color:var(--muted);font-weight:400;margin-top:2px}
+.card input,.card textarea{width:100%;font:inherit;color:inherit;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 11px;margin-bottom:18px}
+.card textarea{min-height:110px;resize:vertical}
+.card button{font:inherit;border-radius:8px;padding:10px 16px;cursor:pointer}
+.save{background:var(--accent);color:var(--accent-ink);border:1px solid var(--accent);font-weight:700}
+.reset{background:var(--surface);color:var(--ink);border:1px solid var(--line);margin-left:8px}
+.status{margin-left:12px;color:var(--ok);font-size:.9rem}
+</style>
+</head>
+<body>
+<nav role="tablist" aria-label="Note templates"><strong>Dental notes <span class="beta">(beta)</span></strong><button type="button" class="tab" data-key="filling" role="tab" aria-selected="false">Filling</button><button type="button" class="tab" data-key="extraction" role="tab" aria-selected="false">Extraction</button><button type="button" class="tab" data-key="prep" role="tab" aria-selected="false">Indirect prep</button><button type="button" class="tab" data-key="fit" role="tab" aria-selected="false">Indirect fit</button><button type="button" class="tab" data-key="endo" role="tab" aria-selected="false">Endo</button><button type="button" class="tab right" data-key="info" role="tab" aria-selected="false">Your details</button></nav>
+<main>
+<iframe id="f-filling" title="Filling note" allow="clipboard-write" srcdoc="{{filling}}"></iframe>
+<iframe id="f-extraction" title="Extraction note" allow="clipboard-write" srcdoc="{{extraction}}"></iframe>
+<iframe id="f-prep" title="Indirect prep note" allow="clipboard-write" srcdoc="{{prep}}"></iframe>
+<iframe id="f-fit" title="Indirect fit note" allow="clipboard-write" srcdoc="{{fit}}"></iframe>
+<iframe id="f-endo" title="Endo note" allow="clipboard-write" srcdoc="{{endo}}"></iframe>
+<section id="p-info" aria-label="Your details">
+  <div class="card">
+    <h1>Your details</h1>
+    <p>The dentist and dental assistant names are used across every template. They’re saved in this browser on this computer only, so each person sharing the file can set their own.</p>
+    <label for="clin">Dentist name <small>Shown as the Clinician line in every note.</small></label>
+    <input id="clin" type="text" autocomplete="off" placeholder="e.g. Dr Alex Smith">
+    <label for="das">Dental assistant names <small>One per line. The first name is selected by default, and you can still pick Other in any note.</small></label>
+    <textarea id="das" placeholder="e.g. Sam"></textarea>
+    <button type="button" class="save" id="save">Save details</button><button type="button" class="reset" id="reset">Clear details</button><span class="status" id="status" role="status"></span>
+  </div>
+</section>
+</main>
+<script>
+(function(){
+  const KEY = "dentalnotes.settings", DEF = { clinician: "", das: [] };
+  let firstRun = false;
+  function load(){ try { const s = JSON.parse(localStorage.getItem(KEY) || "null"); if (s) return s; } catch(e){} firstRun = true; return { clinician: DEF.clinician, das: DEF.das.slice() }; }
+  window.DN_SETTINGS = load();
+  const clin = document.getElementById("clin"), das = document.getElementById("das"), status = document.getElementById("status");
+  function fill(){ clin.value = window.DN_SETTINGS.clinician || ""; das.value = (window.DN_SETTINGS.das || []).join("\n"); }
+  function pushToFrames(){ document.querySelectorAll("iframe").forEach(f => { try { f.contentWindow.DN_apply && f.contentWindow.DN_apply(); } catch(e){} }); }
+  function save(s, msg){
+    window.DN_SETTINGS = s;
+    let stored = true; try { localStorage.setItem(KEY, JSON.stringify(s)); } catch(e){ stored = false; }
+    pushToFrames(); fill();
+    status.textContent = stored ? msg : "Updated for now, but this browser won’t let the page remember it.";
+    setTimeout(() => status.textContent = "", 3000);
+  }
+  document.getElementById("save").onclick = () => save({ clinician: clin.value.trim(), das: das.value.split("\n").map(x => x.trim()).filter(Boolean) }, "Saved");
+  document.getElementById("reset").onclick = () => save({ clinician: DEF.clinician, das: DEF.das.slice() }, "Cleared");
+  fill();
+
+  const keys = ['filling', 'extraction', 'prep', 'fit', 'endo', 'info'];
+  function show(k){
+    if (!keys.includes(k)) k = keys[0];
+    document.querySelectorAll(".tab").forEach(t => t.setAttribute("aria-selected", String(t.dataset.key === k)));
+    document.querySelectorAll("iframe").forEach(f => f.classList.toggle("on", f.id === "f-" + k));
+    document.getElementById("p-info").classList.toggle("on", k === "info");
+    document.title = document.querySelector('.tab[data-key="' + k + '"]').textContent + " · Dental notes";
+    try { if (location.hash !== "#" + k) history.replaceState(null, "", "#" + k); } catch(e){ /* previews that block history changes: tabs still work */ }
+  }
+  document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => show(t.dataset.key)));
+  window.addEventListener("hashchange", () => show(location.hash.slice(1)));
+  document.addEventListener("keydown", e => { if (e.altKey && /^[1-5]$/.test(e.key)){ e.preventDefault(); show(keys[+e.key - 1]); } });
+  show(firstRun && !window.DN_SETTINGS.clinician ? "info" : location.hash.slice(1));
+})();
+</script>
+</body>
+</html>
