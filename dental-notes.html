@@ -36,10 +36,19 @@ iframe.on{display:block}
 .save{background:var(--accent);color:var(--accent-ink);border:1px solid var(--accent);font-weight:700}
 .reset{background:var(--surface);color:var(--ink);border:1px solid var(--line);margin-left:8px}
 .status{margin-left:12px;color:var(--ok);font-size:.9rem}
+#p-changes{position:absolute;inset:0;overflow:auto;display:none;padding:28px 28px 60px}
+#p-changes.on{display:block}
+.card ol{margin:0 0 20px;padding:0;list-style:none}
+.chg{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--line)}
+.chg div{flex:1;line-height:1.45;overflow-wrap:anywhere}
+.chg b{display:block;font-size:.85rem;color:var(--muted);font-weight:600}
+.chg del{color:var(--muted)}
+.card .chg button{padding:6px 12px;font-size:.88rem}
+.card textarea.out{font-size:.82rem;min-height:120px;font-family:ui-monospace,Consolas,monospace}
 </style>
 </head>
 <body>
-<nav role="tablist" aria-label="Note templates"><strong>Dental notes <span class="beta">(beta)</span></strong><button type="button" class="tab" data-key="filling" role="tab" aria-selected="false">Filling</button><button type="button" class="tab" data-key="extraction" role="tab" aria-selected="false">Extraction</button><button type="button" class="tab" data-key="prep" role="tab" aria-selected="false">Indirect prep</button><button type="button" class="tab" data-key="fit" role="tab" aria-selected="false">Indirect fit</button><button type="button" class="tab" data-key="endo" role="tab" aria-selected="false">Endo</button><button type="button" class="tab right" data-key="info" role="tab" aria-selected="false">Your details</button></nav>
+<nav role="tablist" aria-label="Note templates"><strong>Dental notes <span class="beta">(beta)</span></strong><button type="button" class="tab" data-key="filling" role="tab" aria-selected="false">Filling</button><button type="button" class="tab" data-key="extraction" role="tab" aria-selected="false">Extraction</button><button type="button" class="tab" data-key="prep" role="tab" aria-selected="false">Indirect prep</button><button type="button" class="tab" data-key="fit" role="tab" aria-selected="false">Indirect fit</button><button type="button" class="tab" data-key="endo" role="tab" aria-selected="false">Endo</button><button type="button" class="tab right" data-key="info" role="tab" aria-selected="false">Your details</button><button type="button" class="tab" data-key="changes" role="tab" aria-selected="false" hidden>Changes <span id="ccount"></span></button></nav>
 <main>
 <iframe id="f-filling" title="Filling note" allow="clipboard-write" srcdoc="&lt;!DOCTYPE html&gt;
 &lt;html lang=&quot;en-NZ&quot;&gt;
@@ -119,6 +128,13 @@ textarea.txt{min-height:64px;resize:vertical;max-width:560px}
 .fixed.off span{color:var(--muted);text-decoration:line-through}
 .fixed textarea{flex:1;min-height:60px}
 .edited{text-decoration:underline dotted;text-underline-offset:3px}
+.saved{text-decoration:underline solid;text-underline-offset:3px}
+.edit-wrap{display:flex;flex-wrap:wrap;gap:6px;align-items:center;flex:1 1 100%;max-width:720px}
+.fixed .edit-wrap{flex:1}
+.edit-bar{display:flex;flex-wrap:wrap;gap:6px}
+.ebtn{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:7px;padding:5px 10px;font-size:.82rem}
+.ebtn:hover{border-color:var(--muted)}
+.ebtn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
 .chip-edit{width:auto;min-width:220px;max-width:100%;flex:1 1 260px;border-color:var(--accent)}
 .tick{display:inline-flex;gap:7px;align-items:center;background:var(--chip);border-radius:999px;padding:5px 12px 5px 9px;font-size:.88rem;cursor:pointer}
 .tick input{width:16px;height:16px;accent-color:var(--accent);margin:0}
@@ -273,8 +289,28 @@ function el(tag, attrs, ...kids){
   return n;
 }
 function has(k, v){ const x = S[k]; return Array.isArray(x) ? x.includes(v) : x === v; }
-function lab(k, o){ const v = S.lbl[k + &quot;|&quot; + o]; return v != null ? v : o; }
-function ft(k, def){ const v = S.txt[k]; return v != null ? v : def; }
+/* ---------- saved wording (&quot;Save to template&quot;): template wording only, never patient details ---------- */
+const TPL = &quot;filling&quot;, WKEY = &quot;dentalnotes.wording&quot;;
+function wStore(){
+  try { if (window.parent &amp;&amp; window.parent !== window &amp;&amp; window.parent.DN_WORDING) return window.parent.DN_WORDING; } catch(e){}
+  if (!window.DN_WORDING){
+    let a = []; try { a = JSON.parse(localStorage.getItem(WKEY) || &quot;[]&quot;) || []; } catch(e){}
+    const same = (x, c) =&gt; x.tpl === c.tpl &amp;&amp; x.kind === c.kind &amp;&amp; x.field === c.field &amp;&amp; x.from === c.from;
+    window.DN_WORDING = { all: () =&gt; a, set(c){ a = a.filter(x =&gt; !same(x, c)); if (c.to !== c.from) a.push(c);
+      try { localStorage.setItem(WKEY, JSON.stringify(a)); return true; } catch(e){ return false; } } };
+  }
+  return window.DN_WORDING;
+}
+const fieldOf = k =&gt; String(k).split(&quot;.&quot;).pop();
+function savedWord(kind, k, from){ const f = fieldOf(k); const c = wStore().all().find(x =&gt; x.tpl === TPL &amp;&amp; x.kind === kind &amp;&amp; x.field === f &amp;&amp; x.from === from); return c ? c.to : null; }
+function baseLab(k, o){ const v = savedWord(&quot;option&quot;, k, o); return v != null ? v : o; }
+function baseTxt(k, def){ const v = savedWord(&quot;sentence&quot;, k, def); return v != null ? v : def; }
+function saveWord(kind, k, from, to){
+  const ok = wStore().set({ tpl: TPL, kind, field: fieldOf(k), from, to: to || from });
+  toast(ok ? &quot;Saved to template. See the Changes tab.&quot; : &quot;Saved for now, but this browser won’t remember it.&quot;);
+}
+function lab(k, o){ const v = S.lbl[k + &quot;|&quot; + o]; return v != null ? v : baseLab(k, o); }
+function ft(k, def){ const v = S.txt[k]; return v != null ? v : baseTxt(k, def); }
 function one(k){ const v = S[k]; if (!v) return &quot;&quot;; return v === &quot;Other&quot; ? (S[k + &quot;~o&quot;] || &quot;&quot;).trim() : lab(k, v); }
 function many(k, opts){
   const a = S[k] || [];
@@ -291,19 +327,30 @@ function sent(s){ s = (s || &quot;&quot;).trim(); if (!s) return &quot;&quot;; s
 
 /* ---------- UI builders ---------- */
 let lastClick = { id: null, t: 0, prev: null }, editing = null;
+let barDown = false;
+document.addEventListener(&quot;pointerup&quot;, () =&gt; setTimeout(() =&gt; { barDown = false; }, 400));
+function keepEdit(e){ const r = e.relatedTarget; return barDown || !!(r &amp;&amp; r.closest &amp;&amp; r.closest(&quot;.edit-bar&quot;)); }
+function editBar(done){
+  const b = (txt, mode, cls) =&gt; el(&quot;button&quot;, { type: &quot;button&quot;, class: &quot;ebtn&quot; + (cls ? &quot; &quot; + cls : &quot;&quot;),
+    onpointerdown(){ barDown = true; }, onmousedown(e){ e.preventDefault(); }, onclick(){ barDown = false; done(mode); } }, txt);
+  return el(&quot;div&quot;, { class: &quot;edit-bar&quot; }, b(&quot;This note only&quot;, &quot;note&quot;), b(&quot;Save to template&quot;, &quot;save&quot;, &quot;primary&quot;), b(&quot;Cancel&quot;, null));
+}
 function chips(k, opts, multi){
   const wrap = el(&quot;div&quot;, { class: &quot;chips&quot; + (multi ? &quot; multi&quot; : &quot;&quot;), role: &quot;group&quot; });
   opts.forEach(o =&gt; {
     const id = k + &quot;|&quot; + o;
     const on = multi ? (S[k] || []).includes(o) : S[k] === o;
     if (editing === id){
+      const done = mode =&gt; { if (editing !== id) return; const v = inp.value.trim(); editing = null;
+        if (mode === &quot;save&quot;){ delete S.lbl[id]; saveWord(&quot;option&quot;, k, o, v); }
+        else if (mode === &quot;note&quot;){ if (!v || v === baseLab(k, o)) delete S.lbl[id]; else S.lbl[id] = v; }
+        if (mode &amp;&amp; !on){ if (multi) S[k] = (S[k] || []).concat(o); else S[k] = o; } render(); };
       const inp = el(&quot;input&quot;, { type: &quot;text&quot;, class: &quot;txt chip-edit&quot;, value: lab(k, o), &quot;data-key&quot;: &quot;edit:&quot; + id, &quot;aria-label&quot;: &quot;Edit option text&quot;,
-        onkeydown(e){ if (e.key === &quot;Enter&quot;){ e.preventDefault(); e.target.blur(); } if (e.key === &quot;Escape&quot;){ editing = null; render(); } },
-        onblur(e){ if (editing !== id) return; const v = e.target.value.trim(); if (!v || v === o) delete S.lbl[id]; else S.lbl[id] = v;
-          if (!on){ if (multi) S[k] = (S[k] || []).concat(o); else S[k] = o; } editing = null; render(); } });
-      wrap.append(inp); return;
+        onkeydown(e){ if (e.key === &quot;Enter&quot;){ e.preventDefault(); done(&quot;note&quot;); } if (e.key === &quot;Escape&quot;) done(null); },
+        onblur(e){ if (!keepEdit(e)) done(&quot;note&quot;); } });
+      wrap.append(el(&quot;div&quot;, { class: &quot;edit-wrap&quot; }, inp, editBar(done))); return;
     }
-    wrap.append(el(&quot;button&quot;, { type: &quot;button&quot;, class: &quot;chip&quot; + (S.lbl[id] != null ? &quot; edited&quot; : &quot;&quot;), &quot;aria-pressed&quot;: String(on),
+    wrap.append(el(&quot;button&quot;, { type: &quot;button&quot;, class: &quot;chip&quot; + (S.lbl[id] != null ? &quot; edited&quot; : baseLab(k, o) !== o ? &quot; saved&quot; : &quot;&quot;), &quot;aria-pressed&quot;: String(on),
       title: o === &quot;Other&quot; ? &quot;&quot; : &quot;Double-click to edit the wording&quot;, onclick(){
       const now = Date.now();
       if (o !== &quot;Other&quot; &amp;&amp; lastClick.id === id &amp;&amp; now - lastClick.t &lt; 400){
@@ -333,14 +380,18 @@ function branch(...rows){ return el(&quot;div&quot;, { class: &quot;branch&quot;
 function fixed(k, text){
   const cb = el(&quot;input&quot;, { type: &quot;checkbox&quot;, id: &quot;cb-&quot; + k, checked: S[k] ? &quot;checked&quot; : false, &quot;aria-label&quot;: &quot;Include in note&quot;, onchange(e){ S[k] = e.target.checked; render(); } });
   if (editing === &quot;txt:&quot; + k){
+    const done = mode =&gt; { if (editing !== &quot;txt:&quot; + k) return; const v = ta.value.trim(); editing = null;
+      if (mode === &quot;save&quot;){ delete S.txt[k]; saveWord(&quot;sentence&quot;, k, text, v); }
+      else if (mode === &quot;note&quot;){ if (!v || v === baseTxt(k, text)) delete S.txt[k]; else S.txt[k] = v; }
+      if (mode) S[k] = true; render(); };
     const ta = el(&quot;textarea&quot;, { class: &quot;txt&quot;, &quot;data-key&quot;: &quot;edit:txt:&quot; + k, &quot;aria-label&quot;: &quot;Edit sentence&quot;,
-      onkeydown(e){ if (e.key === &quot;Enter&quot; &amp;&amp; !e.shiftKey){ e.preventDefault(); e.target.blur(); } if (e.key === &quot;Escape&quot;){ editing = null; render(); } },
-      onblur(e){ if (editing !== &quot;txt:&quot; + k) return; const v = e.target.value.trim(); if (!v || v === text) delete S.txt[k]; else S.txt[k] = v; S[k] = true; editing = null; render(); } });
+      onkeydown(e){ if (e.key === &quot;Enter&quot; &amp;&amp; !e.shiftKey){ e.preventDefault(); done(&quot;note&quot;); } if (e.key === &quot;Escape&quot;) done(null); },
+      onblur(e){ if (!keepEdit(e)) done(&quot;note&quot;); } });
     ta.value = ft(k, text);
-    return el(&quot;div&quot;, { class: &quot;fixed&quot; }, cb, ta);
+    return el(&quot;div&quot;, { class: &quot;fixed&quot; }, cb, el(&quot;div&quot;, { class: &quot;edit-wrap&quot; }, ta, editBar(done)));
   }
   return el(&quot;div&quot;, { class: &quot;fixed&quot; + (S[k] ? &quot;&quot; : &quot; off&quot;) }, cb,
-    el(&quot;span&quot;, { class: S.txt[k] != null ? &quot;edited&quot; : &quot;&quot;, title: &quot;Double-click to edit the wording&quot;,
+    el(&quot;span&quot;, { class: S.txt[k] != null ? &quot;edited&quot; : baseTxt(k, text) !== text ? &quot;saved&quot; : &quot;&quot;, title: &quot;Double-click to edit the wording&quot;,
       ondblclick(){ editing = &quot;txt:&quot; + k; pendingFocus = &quot;edit:txt:&quot; + k; render(); } }, ft(k, text)));
 }
 function tick(k, text){
@@ -604,6 +655,7 @@ $(&quot;mView&quot;).onclick = () =&gt; $(&quot;note&quot;).scrollIntoView({ beh
 document.addEventListener(&quot;keydown&quot;, e =&gt; { if ((e.ctrlKey || e.metaKey) &amp;&amp; e.key === &quot;Enter&quot;){ e.preventDefault(); copyNote(); } });
 
 fresh(); render();
+window.DN_rerender = function(){ render(); };
 window.DN_apply = function(){
   const oldC = CLINICIAN, oldD = defaultDA();
   loadSettings();
@@ -694,6 +746,13 @@ textarea.txt{min-height:64px;resize:vertical;max-width:560px}
 .fixed.off span{color:var(--muted);text-decoration:line-through}
 .fixed textarea{flex:1;min-height:60px}
 .edited{text-decoration:underline dotted;text-underline-offset:3px}
+.saved{text-decoration:underline solid;text-underline-offset:3px}
+.edit-wrap{display:flex;flex-wrap:wrap;gap:6px;align-items:center;flex:1 1 100%;max-width:720px}
+.fixed .edit-wrap{flex:1}
+.edit-bar{display:flex;flex-wrap:wrap;gap:6px}
+.ebtn{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:7px;padding:5px 10px;font-size:.82rem}
+.ebtn:hover{border-color:var(--muted)}
+.ebtn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
 .chip-edit{width:auto;min-width:220px;max-width:100%;flex:1 1 260px;border-color:var(--accent)}
 .tick{display:inline-flex;gap:7px;align-items:center;background:var(--chip);border-radius:999px;padding:5px 12px 5px 9px;font-size:.88rem;cursor:pointer}
 .tick input{width:16px;height:16px;accent-color:var(--accent);margin:0}
@@ -856,8 +915,28 @@ function el(tag, attrs, ...kids){
   return n;
 }
 function has(k, v){ const x = S[k]; return Array.isArray(x) ? x.includes(v) : x === v; }
-function lab(k, o){ const v = S.lbl[k + &quot;|&quot; + o]; return v != null ? v : o; }
-function ft(k, def){ const v = S.txt[k]; return v != null ? v : def; }
+/* ---------- saved wording (&quot;Save to template&quot;): template wording only, never patient details ---------- */
+const TPL = &quot;extraction&quot;, WKEY = &quot;dentalnotes.wording&quot;;
+function wStore(){
+  try { if (window.parent &amp;&amp; window.parent !== window &amp;&amp; window.parent.DN_WORDING) return window.parent.DN_WORDING; } catch(e){}
+  if (!window.DN_WORDING){
+    let a = []; try { a = JSON.parse(localStorage.getItem(WKEY) || &quot;[]&quot;) || []; } catch(e){}
+    const same = (x, c) =&gt; x.tpl === c.tpl &amp;&amp; x.kind === c.kind &amp;&amp; x.field === c.field &amp;&amp; x.from === c.from;
+    window.DN_WORDING = { all: () =&gt; a, set(c){ a = a.filter(x =&gt; !same(x, c)); if (c.to !== c.from) a.push(c);
+      try { localStorage.setItem(WKEY, JSON.stringify(a)); return true; } catch(e){ return false; } } };
+  }
+  return window.DN_WORDING;
+}
+const fieldOf = k =&gt; String(k).split(&quot;.&quot;).pop();
+function savedWord(kind, k, from){ const f = fieldOf(k); const c = wStore().all().find(x =&gt; x.tpl === TPL &amp;&amp; x.kind === kind &amp;&amp; x.field === f &amp;&amp; x.from === from); return c ? c.to : null; }
+function baseLab(k, o){ const v = savedWord(&quot;option&quot;, k, o); return v != null ? v : o; }
+function baseTxt(k, def){ const v = savedWord(&quot;sentence&quot;, k, def); return v != null ? v : def; }
+function saveWord(kind, k, from, to){
+  const ok = wStore().set({ tpl: TPL, kind, field: fieldOf(k), from, to: to || from });
+  toast(ok ? &quot;Saved to template. See the Changes tab.&quot; : &quot;Saved for now, but this browser won’t remember it.&quot;);
+}
+function lab(k, o){ const v = S.lbl[k + &quot;|&quot; + o]; return v != null ? v : baseLab(k, o); }
+function ft(k, def){ const v = S.txt[k]; return v != null ? v : baseTxt(k, def); }
 function one(k){ const v = S[k]; if (!v) return &quot;&quot;; return v === &quot;Other&quot; ? (S[k + &quot;~o&quot;] || &quot;&quot;).trim() : lab(k, v); }
 function many(k, opts){
   const a = S[k] || [];
@@ -874,19 +953,30 @@ function sent(s){ s = (s || &quot;&quot;).trim(); if (!s) return &quot;&quot;; s
 
 /* ---------- UI builders ---------- */
 let lastClick = { id: null, t: 0, prev: null }, editing = null;
+let barDown = false;
+document.addEventListener(&quot;pointerup&quot;, () =&gt; setTimeout(() =&gt; { barDown = false; }, 400));
+function keepEdit(e){ const r = e.relatedTarget; return barDown || !!(r &amp;&amp; r.closest &amp;&amp; r.closest(&quot;.edit-bar&quot;)); }
+function editBar(done){
+  const b = (txt, mode, cls) =&gt; el(&quot;button&quot;, { type: &quot;button&quot;, class: &quot;ebtn&quot; + (cls ? &quot; &quot; + cls : &quot;&quot;),
+    onpointerdown(){ barDown = true; }, onmousedown(e){ e.preventDefault(); }, onclick(){ barDown = false; done(mode); } }, txt);
+  return el(&quot;div&quot;, { class: &quot;edit-bar&quot; }, b(&quot;This note only&quot;, &quot;note&quot;), b(&quot;Save to template&quot;, &quot;save&quot;, &quot;primary&quot;), b(&quot;Cancel&quot;, null));
+}
 function chips(k, opts, multi){
   const wrap = el(&quot;div&quot;, { class: &quot;chips&quot; + (multi ? &quot; multi&quot; : &quot;&quot;), role: &quot;group&quot; });
   opts.forEach(o =&gt; {
     const id = k + &quot;|&quot; + o;
     const on = multi ? (S[k] || []).includes(o) : S[k] === o;
     if (editing === id){
+      const done = mode =&gt; { if (editing !== id) return; const v = inp.value.trim(); editing = null;
+        if (mode === &quot;save&quot;){ delete S.lbl[id]; saveWord(&quot;option&quot;, k, o, v); }
+        else if (mode === &quot;note&quot;){ if (!v || v === baseLab(k, o)) delete S.lbl[id]; else S.lbl[id] = v; }
+        if (mode &amp;&amp; !on){ if (multi) S[k] = (S[k] || []).concat(o); else S[k] = o; } render(); };
       const inp = el(&quot;input&quot;, { type: &quot;text&quot;, class: &quot;txt chip-edit&quot;, value: lab(k, o), &quot;data-key&quot;: &quot;edit:&quot; + id, &quot;aria-label&quot;: &quot;Edit option text&quot;,
-        onkeydown(e){ if (e.key === &quot;Enter&quot;){ e.preventDefault(); e.target.blur(); } if (e.key === &quot;Escape&quot;){ editing = null; render(); } },
-        onblur(e){ if (editing !== id) return; const v = e.target.value.trim(); if (!v || v === o) delete S.lbl[id]; else S.lbl[id] = v;
-          if (!on){ if (multi) S[k] = (S[k] || []).concat(o); else S[k] = o; } editing = null; render(); } });
-      wrap.append(inp); return;
+        onkeydown(e){ if (e.key === &quot;Enter&quot;){ e.preventDefault(); done(&quot;note&quot;); } if (e.key === &quot;Escape&quot;) done(null); },
+        onblur(e){ if (!keepEdit(e)) done(&quot;note&quot;); } });
+      wrap.append(el(&quot;div&quot;, { class: &quot;edit-wrap&quot; }, inp, editBar(done))); return;
     }
-    wrap.append(el(&quot;button&quot;, { type: &quot;button&quot;, class: &quot;chip&quot; + (S.lbl[id] != null ? &quot; edited&quot; : &quot;&quot;), &quot;aria-pressed&quot;: String(on),
+    wrap.append(el(&quot;button&quot;, { type: &quot;button&quot;, class: &quot;chip&quot; + (S.lbl[id] != null ? &quot; edited&quot; : baseLab(k, o) !== o ? &quot; saved&quot; : &quot;&quot;), &quot;aria-pressed&quot;: String(on),
       title: o === &quot;Other&quot; ? &quot;&quot; : &quot;Double-click to edit the wording&quot;, onclick(){
       const now = Date.now();
       if (o !== &quot;Other&quot; &amp;&amp; lastClick.id === id &amp;&amp; now - lastClick.t &lt; 400){
@@ -916,14 +1006,18 @@ function branch(...rows){ return el(&quot;div&quot;, { class: &quot;branch&quot;
 function fixed(k, text){
   const cb = el(&quot;input&quot;, { type: &quot;checkbox&quot;, id: &quot;cb-&quot; + k, checked: S[k] ? &quot;checked&quot; : false, &quot;aria-label&quot;: &quot;Include in note&quot;, onchange(e){ S[k] = e.target.checked; render(); } });
   if (editing === &quot;txt:&quot; + k){
+    const done = mode =&gt; { if (editing !== &quot;txt:&quot; + k) return; const v = ta.value.trim(); editing = null;
+      if (mode === &quot;save&quot;){ delete S.txt[k]; saveWord(&quot;sentence&quot;, k, text, v); }
+      else if (mode === &quot;note&quot;){ if (!v || v === baseTxt(k, text)) delete S.txt[k]; else S.txt[k] = v; }
+      if (mode) S[k] = true; render(); };
     const ta = el(&quot;textarea&quot;, { class: &quot;txt&quot;, &quot;data-key&quot;: &quot;edit:txt:&quot; + k, &quot;aria-label&quot;: &quot;Edit sentence&quot;,
-      onkeydown(e){ if (e.key === &quot;Enter&quot; &amp;&amp; !e.shiftKey){ e.preventDefault(); e.target.blur(); } if (e.key === &quot;Escape&quot;){ editing = null; render(); } },
-      onblur(e){ if (editing !== &quot;txt:&quot; + k) return; const v = e.target.value.trim(); if (!v || v === text) delete S.txt[k]; else S.txt[k] = v; S[k] = true; editing = null; render(); } });
+      onkeydown(e){ if (e.key === &quot;Enter&quot; &amp;&amp; !e.shiftKey){ e.preventDefault(); done(&quot;note&quot;); } if (e.key === &quot;Escape&quot;) done(null); },
+      onblur(e){ if (!keepEdit(e)) done(&quot;note&quot;); } });
     ta.value = ft(k, text);
-    return el(&quot;div&quot;, { class: &quot;fixed&quot; }, cb, ta);
+    return el(&quot;div&quot;, { class: &quot;fixed&quot; }, cb, el(&quot;div&quot;, { class: &quot;edit-wrap&quot; }, ta, editBar(done)));
   }
   return el(&quot;div&quot;, { class: &quot;fixed&quot; + (S[k] ? &quot;&quot; : &quot; off&quot;) }, cb,
-    el(&quot;span&quot;, { class: S.txt[k] != null ? &quot;edited&quot; : &quot;&quot;, title: &quot;Double-click to edit the wording&quot;,
+    el(&quot;span&quot;, { class: S.txt[k] != null ? &quot;edited&quot; : baseTxt(k, text) !== text ? &quot;saved&quot; : &quot;&quot;, title: &quot;Double-click to edit the wording&quot;,
       ondblclick(){ editing = &quot;txt:&quot; + k; pendingFocus = &quot;edit:txt:&quot; + k; render(); } }, ft(k, text)));
 }
 function tick(k, text){
@@ -1186,6 +1280,7 @@ $(&quot;mView&quot;).onclick = () =&gt; $(&quot;note&quot;).scrollIntoView({ beh
 document.addEventListener(&quot;keydown&quot;, e =&gt; { if ((e.ctrlKey || e.metaKey) &amp;&amp; e.key === &quot;Enter&quot;){ e.preventDefault(); copyNote(); } });
 
 fresh(); render();
+window.DN_rerender = function(){ render(); };
 window.DN_apply = function(){
   const oldC = CLINICIAN, oldD = defaultDA();
   loadSettings();
@@ -1277,6 +1372,13 @@ textarea.txt{min-height:64px;resize:vertical;max-width:560px}
 .fixed.off span{color:var(--muted);text-decoration:line-through}
 .fixed textarea{flex:1;min-height:60px}
 .edited{text-decoration:underline dotted;text-underline-offset:3px}
+.saved{text-decoration:underline solid;text-underline-offset:3px}
+.edit-wrap{display:flex;flex-wrap:wrap;gap:6px;align-items:center;flex:1 1 100%;max-width:720px}
+.fixed .edit-wrap{flex:1}
+.edit-bar{display:flex;flex-wrap:wrap;gap:6px}
+.ebtn{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:7px;padding:5px 10px;font-size:.82rem}
+.ebtn:hover{border-color:var(--muted)}
+.ebtn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
 .chip-edit{width:auto;min-width:220px;max-width:100%;flex:1 1 260px;border-color:var(--accent)}
 .tick{display:inline-flex;gap:7px;align-items:center;background:var(--chip);border-radius:999px;padding:5px 12px 5px 9px;font-size:.88rem;cursor:pointer}
 .tick input{width:16px;height:16px;accent-color:var(--accent);margin:0}
@@ -1390,8 +1492,28 @@ function el(tag, attrs, ...kids){
   return n;
 }
 function has(k, v){ const x = S[k]; return Array.isArray(x) ? x.includes(v) : x === v; }
-function lab(k, o){ const v = S.lbl[k + &quot;|&quot; + o]; return v != null ? v : o; }
-function ft(k, def){ const v = S.txt[k]; return v != null ? v : def; }
+/* ---------- saved wording (&quot;Save to template&quot;): template wording only, never patient details ---------- */
+const TPL = &quot;prep&quot;, WKEY = &quot;dentalnotes.wording&quot;;
+function wStore(){
+  try { if (window.parent &amp;&amp; window.parent !== window &amp;&amp; window.parent.DN_WORDING) return window.parent.DN_WORDING; } catch(e){}
+  if (!window.DN_WORDING){
+    let a = []; try { a = JSON.parse(localStorage.getItem(WKEY) || &quot;[]&quot;) || []; } catch(e){}
+    const same = (x, c) =&gt; x.tpl === c.tpl &amp;&amp; x.kind === c.kind &amp;&amp; x.field === c.field &amp;&amp; x.from === c.from;
+    window.DN_WORDING = { all: () =&gt; a, set(c){ a = a.filter(x =&gt; !same(x, c)); if (c.to !== c.from) a.push(c);
+      try { localStorage.setItem(WKEY, JSON.stringify(a)); return true; } catch(e){ return false; } } };
+  }
+  return window.DN_WORDING;
+}
+const fieldOf = k =&gt; String(k).split(&quot;.&quot;).pop();
+function savedWord(kind, k, from){ const f = fieldOf(k); const c = wStore().all().find(x =&gt; x.tpl === TPL &amp;&amp; x.kind === kind &amp;&amp; x.field === f &amp;&amp; x.from === from); return c ? c.to : null; }
+function baseLab(k, o){ const v = savedWord(&quot;option&quot;, k, o); return v != null ? v : o; }
+function baseTxt(k, def){ const v = savedWord(&quot;sentence&quot;, k, def); return v != null ? v : def; }
+function saveWord(kind, k, from, to){
+  const ok = wStore().set({ tpl: TPL, kind, field: fieldOf(k), from, to: to || from });
+  toast(ok ? &quot;Saved to template. See the Changes tab.&quot; : &quot;Saved for now, but this browser won’t remember it.&quot;);
+}
+function lab(k, o){ const v = S.lbl[k + &quot;|&quot; + o]; return v != null ? v : baseLab(k, o); }
+function ft(k, def){ const v = S.txt[k]; return v != null ? v : baseTxt(k, def); }
 function one(k){ const v = S[k]; if (!v) return &quot;&quot;; return v === &quot;Other&quot; ? (S[k + &quot;~o&quot;] || &quot;&quot;).trim() : lab(k, v); }
 function many(k, opts){
   const a = S[k] || [];
@@ -1408,19 +1530,30 @@ function sent(s){ s = (s || &quot;&quot;).trim(); if (!s) return &quot;&quot;; s
 
 /* ---------- UI builders ---------- */
 let lastClick = { id: null, t: 0, prev: null }, editing = null;
+let barDown = false;
+document.addEventListener(&quot;pointerup&quot;, () =&gt; setTimeout(() =&gt; { barDown = false; }, 400));
+function keepEdit(e){ const r = e.relatedTarget; return barDown || !!(r &amp;&amp; r.closest &amp;&amp; r.closest(&quot;.edit-bar&quot;)); }
+function editBar(done){
+  const b = (txt, mode, cls) =&gt; el(&quot;button&quot;, { type: &quot;button&quot;, class: &quot;ebtn&quot; + (cls ? &quot; &quot; + cls : &quot;&quot;),
+    onpointerdown(){ barDown = true; }, onmousedown(e){ e.preventDefault(); }, onclick(){ barDown = false; done(mode); } }, txt);
+  return el(&quot;div&quot;, { class: &quot;edit-bar&quot; }, b(&quot;This note only&quot;, &quot;note&quot;), b(&quot;Save to template&quot;, &quot;save&quot;, &quot;primary&quot;), b(&quot;Cancel&quot;, null));
+}
 function chips(k, opts, multi){
   const wrap = el(&quot;div&quot;, { class: &quot;chips&quot; + (multi ? &quot; multi&quot; : &quot;&quot;), role: &quot;group&quot; });
   opts.forEach(o =&gt; {
     const id = k + &quot;|&quot; + o;
     const on = multi ? (S[k] || []).includes(o) : S[k] === o;
     if (editing === id){
+      const done = mode =&gt; { if (editing !== id) return; const v = inp.value.trim(); editing = null;
+        if (mode === &quot;save&quot;){ delete S.lbl[id]; saveWord(&quot;option&quot;, k, o, v); }
+        else if (mode === &quot;note&quot;){ if (!v || v === baseLab(k, o)) delete S.lbl[id]; else S.lbl[id] = v; }
+        if (mode &amp;&amp; !on){ if (multi) S[k] = (S[k] || []).concat(o); else S[k] = o; } render(); };
       const inp = el(&quot;input&quot;, { type: &quot;text&quot;, class: &quot;txt chip-edit&quot;, value: lab(k, o), &quot;data-key&quot;: &quot;edit:&quot; + id, &quot;aria-label&quot;: &quot;Edit option text&quot;,
-        onkeydown(e){ if (e.key === &quot;Enter&quot;){ e.preventDefault(); e.target.blur(); } if (e.key === &quot;Escape&quot;){ editing = null; render(); } },
-        onblur(e){ if (editing !== id) return; const v = e.target.value.trim(); if (!v || v === o) delete S.lbl[id]; else S.lbl[id] = v;
-          if (!on){ if (multi) S[k] = (S[k] || []).concat(o); else S[k] = o; } editing = null; render(); } });
-      wrap.append(inp); return;
+        onkeydown(e){ if (e.key === &quot;Enter&quot;){ e.preventDefault(); done(&quot;note&quot;); } if (e.key === &quot;Escape&quot;) done(null); },
+        onblur(e){ if (!keepEdit(e)) done(&quot;note&quot;); } });
+      wrap.append(el(&quot;div&quot;, { class: &quot;edit-wrap&quot; }, inp, editBar(done))); return;
     }
-    wrap.append(el(&quot;button&quot;, { type: &quot;button&quot;, class: &quot;chip&quot; + (S.lbl[id] != null ? &quot; edited&quot; : &quot;&quot;), &quot;aria-pressed&quot;: String(on),
+    wrap.append(el(&quot;button&quot;, { type: &quot;button&quot;, class: &quot;chip&quot; + (S.lbl[id] != null ? &quot; edited&quot; : baseLab(k, o) !== o ? &quot; saved&quot; : &quot;&quot;), &quot;aria-pressed&quot;: String(on),
       title: o === &quot;Other&quot; ? &quot;&quot; : &quot;Double-click to edit the wording&quot;, onclick(){
       const now = Date.now();
       if (o !== &quot;Other&quot; &amp;&amp; lastClick.id === id &amp;&amp; now - lastClick.t &lt; 400){
@@ -1450,14 +1583,18 @@ function branch(...rows){ return el(&quot;div&quot;, { class: &quot;branch&quot;
 function fixed(k, text){
   const cb = el(&quot;input&quot;, { type: &quot;checkbox&quot;, id: &quot;cb-&quot; + k, checked: S[k] ? &quot;checked&quot; : false, &quot;aria-label&quot;: &quot;Include in note&quot;, onchange(e){ S[k] = e.target.checked; render(); } });
   if (editing === &quot;txt:&quot; + k){
+    const done = mode =&gt; { if (editing !== &quot;txt:&quot; + k) return; const v = ta.value.trim(); editing = null;
+      if (mode === &quot;save&quot;){ delete S.txt[k]; saveWord(&quot;sentence&quot;, k, text, v); }
+      else if (mode === &quot;note&quot;){ if (!v || v === baseTxt(k, text)) delete S.txt[k]; else S.txt[k] = v; }
+      if (mode) S[k] = true; render(); };
     const ta = el(&quot;textarea&quot;, { class: &quot;txt&quot;, &quot;data-key&quot;: &quot;edit:txt:&quot; + k, &quot;aria-label&quot;: &quot;Edit sentence&quot;,
-      onkeydown(e){ if (e.key === &quot;Enter&quot; &amp;&amp; !e.shiftKey){ e.preventDefault(); e.target.blur(); } if (e.key === &quot;Escape&quot;){ editing = null; render(); } },
-      onblur(e){ if (editing !== &quot;txt:&quot; + k) return; const v = e.target.value.trim(); if (!v || v === text) delete S.txt[k]; else S.txt[k] = v; S[k] = true; editing = null; render(); } });
+      onkeydown(e){ if (e.key === &quot;Enter&quot; &amp;&amp; !e.shiftKey){ e.preventDefault(); done(&quot;note&quot;); } if (e.key === &quot;Escape&quot;) done(null); },
+      onblur(e){ if (!keepEdit(e)) done(&quot;note&quot;); } });
     ta.value = ft(k, text);
-    return el(&quot;div&quot;, { class: &quot;fixed&quot; }, cb, ta);
+    return el(&quot;div&quot;, { class: &quot;fixed&quot; }, cb, el(&quot;div&quot;, { class: &quot;edit-wrap&quot; }, ta, editBar(done)));
   }
   return el(&quot;div&quot;, { class: &quot;fixed&quot; + (S[k] ? &quot;&quot; : &quot; off&quot;) }, cb,
-    el(&quot;span&quot;, { class: S.txt[k] != null ? &quot;edited&quot; : &quot;&quot;, title: &quot;Double-click to edit the wording&quot;,
+    el(&quot;span&quot;, { class: S.txt[k] != null ? &quot;edited&quot; : baseTxt(k, text) !== text ? &quot;saved&quot; : &quot;&quot;, title: &quot;Double-click to edit the wording&quot;,
       ondblclick(){ editing = &quot;txt:&quot; + k; pendingFocus = &quot;edit:txt:&quot; + k; render(); } }, ft(k, text)));
 }
 function tick(k, text){
@@ -1734,6 +1871,7 @@ $(&quot;mView&quot;).onclick = () =&gt; $(&quot;note&quot;).scrollIntoView({ beh
 document.addEventListener(&quot;keydown&quot;, e =&gt; { if ((e.ctrlKey || e.metaKey) &amp;&amp; e.key === &quot;Enter&quot;){ e.preventDefault(); copyNote(); } });
 
 fresh(); render();
+window.DN_rerender = function(){ render(); };
 window.DN_apply = function(){
   const oldC = CLINICIAN, oldD = defaultDA();
   loadSettings();
@@ -1825,6 +1963,13 @@ textarea.txt{min-height:64px;resize:vertical;max-width:560px}
 .fixed.off span{color:var(--muted);text-decoration:line-through}
 .fixed textarea{flex:1;min-height:60px}
 .edited{text-decoration:underline dotted;text-underline-offset:3px}
+.saved{text-decoration:underline solid;text-underline-offset:3px}
+.edit-wrap{display:flex;flex-wrap:wrap;gap:6px;align-items:center;flex:1 1 100%;max-width:720px}
+.fixed .edit-wrap{flex:1}
+.edit-bar{display:flex;flex-wrap:wrap;gap:6px}
+.ebtn{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:7px;padding:5px 10px;font-size:.82rem}
+.ebtn:hover{border-color:var(--muted)}
+.ebtn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
 .chip-edit{width:auto;min-width:220px;max-width:100%;flex:1 1 260px;border-color:var(--accent)}
 .tick{display:inline-flex;gap:7px;align-items:center;background:var(--chip);border-radius:999px;padding:5px 12px 5px 9px;font-size:.88rem;cursor:pointer}
 .tick input{width:16px;height:16px;accent-color:var(--accent);margin:0}
@@ -1938,8 +2083,28 @@ function el(tag, attrs, ...kids){
   return n;
 }
 function has(k, v){ const x = S[k]; return Array.isArray(x) ? x.includes(v) : x === v; }
-function lab(k, o){ const v = S.lbl[k + &quot;|&quot; + o]; return v != null ? v : o; }
-function ft(k, def){ const v = S.txt[k]; return v != null ? v : def; }
+/* ---------- saved wording (&quot;Save to template&quot;): template wording only, never patient details ---------- */
+const TPL = &quot;fit&quot;, WKEY = &quot;dentalnotes.wording&quot;;
+function wStore(){
+  try { if (window.parent &amp;&amp; window.parent !== window &amp;&amp; window.parent.DN_WORDING) return window.parent.DN_WORDING; } catch(e){}
+  if (!window.DN_WORDING){
+    let a = []; try { a = JSON.parse(localStorage.getItem(WKEY) || &quot;[]&quot;) || []; } catch(e){}
+    const same = (x, c) =&gt; x.tpl === c.tpl &amp;&amp; x.kind === c.kind &amp;&amp; x.field === c.field &amp;&amp; x.from === c.from;
+    window.DN_WORDING = { all: () =&gt; a, set(c){ a = a.filter(x =&gt; !same(x, c)); if (c.to !== c.from) a.push(c);
+      try { localStorage.setItem(WKEY, JSON.stringify(a)); return true; } catch(e){ return false; } } };
+  }
+  return window.DN_WORDING;
+}
+const fieldOf = k =&gt; String(k).split(&quot;.&quot;).pop();
+function savedWord(kind, k, from){ const f = fieldOf(k); const c = wStore().all().find(x =&gt; x.tpl === TPL &amp;&amp; x.kind === kind &amp;&amp; x.field === f &amp;&amp; x.from === from); return c ? c.to : null; }
+function baseLab(k, o){ const v = savedWord(&quot;option&quot;, k, o); return v != null ? v : o; }
+function baseTxt(k, def){ const v = savedWord(&quot;sentence&quot;, k, def); return v != null ? v : def; }
+function saveWord(kind, k, from, to){
+  const ok = wStore().set({ tpl: TPL, kind, field: fieldOf(k), from, to: to || from });
+  toast(ok ? &quot;Saved to template. See the Changes tab.&quot; : &quot;Saved for now, but this browser won’t remember it.&quot;);
+}
+function lab(k, o){ const v = S.lbl[k + &quot;|&quot; + o]; return v != null ? v : baseLab(k, o); }
+function ft(k, def){ const v = S.txt[k]; return v != null ? v : baseTxt(k, def); }
 function one(k){ const v = S[k]; if (!v) return &quot;&quot;; return v === &quot;Other&quot; ? (S[k + &quot;~o&quot;] || &quot;&quot;).trim() : lab(k, v); }
 function many(k, opts){
   const a = S[k] || [];
@@ -1956,19 +2121,30 @@ function sent(s){ s = (s || &quot;&quot;).trim(); if (!s) return &quot;&quot;; s
 
 /* ---------- UI builders ---------- */
 let lastClick = { id: null, t: 0, prev: null }, editing = null;
+let barDown = false;
+document.addEventListener(&quot;pointerup&quot;, () =&gt; setTimeout(() =&gt; { barDown = false; }, 400));
+function keepEdit(e){ const r = e.relatedTarget; return barDown || !!(r &amp;&amp; r.closest &amp;&amp; r.closest(&quot;.edit-bar&quot;)); }
+function editBar(done){
+  const b = (txt, mode, cls) =&gt; el(&quot;button&quot;, { type: &quot;button&quot;, class: &quot;ebtn&quot; + (cls ? &quot; &quot; + cls : &quot;&quot;),
+    onpointerdown(){ barDown = true; }, onmousedown(e){ e.preventDefault(); }, onclick(){ barDown = false; done(mode); } }, txt);
+  return el(&quot;div&quot;, { class: &quot;edit-bar&quot; }, b(&quot;This note only&quot;, &quot;note&quot;), b(&quot;Save to template&quot;, &quot;save&quot;, &quot;primary&quot;), b(&quot;Cancel&quot;, null));
+}
 function chips(k, opts, multi){
   const wrap = el(&quot;div&quot;, { class: &quot;chips&quot; + (multi ? &quot; multi&quot; : &quot;&quot;), role: &quot;group&quot; });
   opts.forEach(o =&gt; {
     const id = k + &quot;|&quot; + o;
     const on = multi ? (S[k] || []).includes(o) : S[k] === o;
     if (editing === id){
+      const done = mode =&gt; { if (editing !== id) return; const v = inp.value.trim(); editing = null;
+        if (mode === &quot;save&quot;){ delete S.lbl[id]; saveWord(&quot;option&quot;, k, o, v); }
+        else if (mode === &quot;note&quot;){ if (!v || v === baseLab(k, o)) delete S.lbl[id]; else S.lbl[id] = v; }
+        if (mode &amp;&amp; !on){ if (multi) S[k] = (S[k] || []).concat(o); else S[k] = o; } render(); };
       const inp = el(&quot;input&quot;, { type: &quot;text&quot;, class: &quot;txt chip-edit&quot;, value: lab(k, o), &quot;data-key&quot;: &quot;edit:&quot; + id, &quot;aria-label&quot;: &quot;Edit option text&quot;,
-        onkeydown(e){ if (e.key === &quot;Enter&quot;){ e.preventDefault(); e.target.blur(); } if (e.key === &quot;Escape&quot;){ editing = null; render(); } },
-        onblur(e){ if (editing !== id) return; const v = e.target.value.trim(); if (!v || v === o) delete S.lbl[id]; else S.lbl[id] = v;
-          if (!on){ if (multi) S[k] = (S[k] || []).concat(o); else S[k] = o; } editing = null; render(); } });
-      wrap.append(inp); return;
+        onkeydown(e){ if (e.key === &quot;Enter&quot;){ e.preventDefault(); done(&quot;note&quot;); } if (e.key === &quot;Escape&quot;) done(null); },
+        onblur(e){ if (!keepEdit(e)) done(&quot;note&quot;); } });
+      wrap.append(el(&quot;div&quot;, { class: &quot;edit-wrap&quot; }, inp, editBar(done))); return;
     }
-    wrap.append(el(&quot;button&quot;, { type: &quot;button&quot;, class: &quot;chip&quot; + (S.lbl[id] != null ? &quot; edited&quot; : &quot;&quot;), &quot;aria-pressed&quot;: String(on),
+    wrap.append(el(&quot;button&quot;, { type: &quot;button&quot;, class: &quot;chip&quot; + (S.lbl[id] != null ? &quot; edited&quot; : baseLab(k, o) !== o ? &quot; saved&quot; : &quot;&quot;), &quot;aria-pressed&quot;: String(on),
       title: o === &quot;Other&quot; ? &quot;&quot; : &quot;Double-click to edit the wording&quot;, onclick(){
       const now = Date.now();
       if (o !== &quot;Other&quot; &amp;&amp; lastClick.id === id &amp;&amp; now - lastClick.t &lt; 400){
@@ -1998,14 +2174,18 @@ function branch(...rows){ return el(&quot;div&quot;, { class: &quot;branch&quot;
 function fixed(k, text){
   const cb = el(&quot;input&quot;, { type: &quot;checkbox&quot;, id: &quot;cb-&quot; + k, checked: S[k] ? &quot;checked&quot; : false, &quot;aria-label&quot;: &quot;Include in note&quot;, onchange(e){ S[k] = e.target.checked; render(); } });
   if (editing === &quot;txt:&quot; + k){
+    const done = mode =&gt; { if (editing !== &quot;txt:&quot; + k) return; const v = ta.value.trim(); editing = null;
+      if (mode === &quot;save&quot;){ delete S.txt[k]; saveWord(&quot;sentence&quot;, k, text, v); }
+      else if (mode === &quot;note&quot;){ if (!v || v === baseTxt(k, text)) delete S.txt[k]; else S.txt[k] = v; }
+      if (mode) S[k] = true; render(); };
     const ta = el(&quot;textarea&quot;, { class: &quot;txt&quot;, &quot;data-key&quot;: &quot;edit:txt:&quot; + k, &quot;aria-label&quot;: &quot;Edit sentence&quot;,
-      onkeydown(e){ if (e.key === &quot;Enter&quot; &amp;&amp; !e.shiftKey){ e.preventDefault(); e.target.blur(); } if (e.key === &quot;Escape&quot;){ editing = null; render(); } },
-      onblur(e){ if (editing !== &quot;txt:&quot; + k) return; const v = e.target.value.trim(); if (!v || v === text) delete S.txt[k]; else S.txt[k] = v; S[k] = true; editing = null; render(); } });
+      onkeydown(e){ if (e.key === &quot;Enter&quot; &amp;&amp; !e.shiftKey){ e.preventDefault(); done(&quot;note&quot;); } if (e.key === &quot;Escape&quot;) done(null); },
+      onblur(e){ if (!keepEdit(e)) done(&quot;note&quot;); } });
     ta.value = ft(k, text);
-    return el(&quot;div&quot;, { class: &quot;fixed&quot; }, cb, ta);
+    return el(&quot;div&quot;, { class: &quot;fixed&quot; }, cb, el(&quot;div&quot;, { class: &quot;edit-wrap&quot; }, ta, editBar(done)));
   }
   return el(&quot;div&quot;, { class: &quot;fixed&quot; + (S[k] ? &quot;&quot; : &quot; off&quot;) }, cb,
-    el(&quot;span&quot;, { class: S.txt[k] != null ? &quot;edited&quot; : &quot;&quot;, title: &quot;Double-click to edit the wording&quot;,
+    el(&quot;span&quot;, { class: S.txt[k] != null ? &quot;edited&quot; : baseTxt(k, text) !== text ? &quot;saved&quot; : &quot;&quot;, title: &quot;Double-click to edit the wording&quot;,
       ondblclick(){ editing = &quot;txt:&quot; + k; pendingFocus = &quot;edit:txt:&quot; + k; render(); } }, ft(k, text)));
 }
 function tick(k, text){
@@ -2246,6 +2426,7 @@ $(&quot;mView&quot;).onclick = () =&gt; $(&quot;note&quot;).scrollIntoView({ beh
 document.addEventListener(&quot;keydown&quot;, e =&gt; { if ((e.ctrlKey || e.metaKey) &amp;&amp; e.key === &quot;Enter&quot;){ e.preventDefault(); copyNote(); } });
 
 fresh(); render();
+window.DN_rerender = function(){ render(); };
 window.DN_apply = function(){
   const oldC = CLINICIAN, oldD = defaultDA();
   loadSettings();
@@ -2337,6 +2518,13 @@ textarea.txt{min-height:64px;resize:vertical;max-width:560px}
 .fixed.off span{color:var(--muted);text-decoration:line-through}
 .fixed textarea{flex:1;min-height:60px}
 .edited{text-decoration:underline dotted;text-underline-offset:3px}
+.saved{text-decoration:underline solid;text-underline-offset:3px}
+.edit-wrap{display:flex;flex-wrap:wrap;gap:6px;align-items:center;flex:1 1 100%;max-width:720px}
+.fixed .edit-wrap{flex:1}
+.edit-bar{display:flex;flex-wrap:wrap;gap:6px}
+.ebtn{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:7px;padding:5px 10px;font-size:.82rem}
+.ebtn:hover{border-color:var(--muted)}
+.ebtn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
 .chip-edit{width:auto;min-width:220px;max-width:100%;flex:1 1 260px;border-color:var(--accent)}
 .tick{display:inline-flex;gap:7px;align-items:center;background:var(--chip);border-radius:999px;padding:5px 12px 5px 9px;font-size:.88rem;cursor:pointer}
 .tick input{width:16px;height:16px;accent-color:var(--accent);margin:0}
@@ -2449,8 +2637,28 @@ function el(tag, attrs, ...kids){
   return n;
 }
 function has(k, v){ const x = S[k]; return Array.isArray(x) ? x.includes(v) : x === v; }
-function lab(k, o){ const v = S.lbl[k + &quot;|&quot; + o]; return v != null ? v : o; }
-function ft(k, def){ const v = S.txt[k]; return v != null ? v : def; }
+/* ---------- saved wording (&quot;Save to template&quot;): template wording only, never patient details ---------- */
+const TPL = &quot;endo&quot;, WKEY = &quot;dentalnotes.wording&quot;;
+function wStore(){
+  try { if (window.parent &amp;&amp; window.parent !== window &amp;&amp; window.parent.DN_WORDING) return window.parent.DN_WORDING; } catch(e){}
+  if (!window.DN_WORDING){
+    let a = []; try { a = JSON.parse(localStorage.getItem(WKEY) || &quot;[]&quot;) || []; } catch(e){}
+    const same = (x, c) =&gt; x.tpl === c.tpl &amp;&amp; x.kind === c.kind &amp;&amp; x.field === c.field &amp;&amp; x.from === c.from;
+    window.DN_WORDING = { all: () =&gt; a, set(c){ a = a.filter(x =&gt; !same(x, c)); if (c.to !== c.from) a.push(c);
+      try { localStorage.setItem(WKEY, JSON.stringify(a)); return true; } catch(e){ return false; } } };
+  }
+  return window.DN_WORDING;
+}
+const fieldOf = k =&gt; String(k).split(&quot;.&quot;).pop();
+function savedWord(kind, k, from){ const f = fieldOf(k); const c = wStore().all().find(x =&gt; x.tpl === TPL &amp;&amp; x.kind === kind &amp;&amp; x.field === f &amp;&amp; x.from === from); return c ? c.to : null; }
+function baseLab(k, o){ const v = savedWord(&quot;option&quot;, k, o); return v != null ? v : o; }
+function baseTxt(k, def){ const v = savedWord(&quot;sentence&quot;, k, def); return v != null ? v : def; }
+function saveWord(kind, k, from, to){
+  const ok = wStore().set({ tpl: TPL, kind, field: fieldOf(k), from, to: to || from });
+  toast(ok ? &quot;Saved to template. See the Changes tab.&quot; : &quot;Saved for now, but this browser won’t remember it.&quot;);
+}
+function lab(k, o){ const v = S.lbl[k + &quot;|&quot; + o]; return v != null ? v : baseLab(k, o); }
+function ft(k, def){ const v = S.txt[k]; return v != null ? v : baseTxt(k, def); }
 function one(k){ const v = S[k]; if (!v) return &quot;&quot;; return v === &quot;Other&quot; ? (S[k + &quot;~o&quot;] || &quot;&quot;).trim() : lab(k, v); }
 function many(k, opts){
   const a = S[k] || [];
@@ -2467,19 +2675,30 @@ function sent(s){ s = (s || &quot;&quot;).trim(); if (!s) return &quot;&quot;; s
 
 /* ---------- UI builders ---------- */
 let lastClick = { id: null, t: 0, prev: null }, editing = null;
+let barDown = false;
+document.addEventListener(&quot;pointerup&quot;, () =&gt; setTimeout(() =&gt; { barDown = false; }, 400));
+function keepEdit(e){ const r = e.relatedTarget; return barDown || !!(r &amp;&amp; r.closest &amp;&amp; r.closest(&quot;.edit-bar&quot;)); }
+function editBar(done){
+  const b = (txt, mode, cls) =&gt; el(&quot;button&quot;, { type: &quot;button&quot;, class: &quot;ebtn&quot; + (cls ? &quot; &quot; + cls : &quot;&quot;),
+    onpointerdown(){ barDown = true; }, onmousedown(e){ e.preventDefault(); }, onclick(){ barDown = false; done(mode); } }, txt);
+  return el(&quot;div&quot;, { class: &quot;edit-bar&quot; }, b(&quot;This note only&quot;, &quot;note&quot;), b(&quot;Save to template&quot;, &quot;save&quot;, &quot;primary&quot;), b(&quot;Cancel&quot;, null));
+}
 function chips(k, opts, multi){
   const wrap = el(&quot;div&quot;, { class: &quot;chips&quot; + (multi ? &quot; multi&quot; : &quot;&quot;), role: &quot;group&quot; });
   opts.forEach(o =&gt; {
     const id = k + &quot;|&quot; + o;
     const on = multi ? (S[k] || []).includes(o) : S[k] === o;
     if (editing === id){
+      const done = mode =&gt; { if (editing !== id) return; const v = inp.value.trim(); editing = null;
+        if (mode === &quot;save&quot;){ delete S.lbl[id]; saveWord(&quot;option&quot;, k, o, v); }
+        else if (mode === &quot;note&quot;){ if (!v || v === baseLab(k, o)) delete S.lbl[id]; else S.lbl[id] = v; }
+        if (mode &amp;&amp; !on){ if (multi) S[k] = (S[k] || []).concat(o); else S[k] = o; } render(); };
       const inp = el(&quot;input&quot;, { type: &quot;text&quot;, class: &quot;txt chip-edit&quot;, value: lab(k, o), &quot;data-key&quot;: &quot;edit:&quot; + id, &quot;aria-label&quot;: &quot;Edit option text&quot;,
-        onkeydown(e){ if (e.key === &quot;Enter&quot;){ e.preventDefault(); e.target.blur(); } if (e.key === &quot;Escape&quot;){ editing = null; render(); } },
-        onblur(e){ if (editing !== id) return; const v = e.target.value.trim(); if (!v || v === o) delete S.lbl[id]; else S.lbl[id] = v;
-          if (!on){ if (multi) S[k] = (S[k] || []).concat(o); else S[k] = o; } editing = null; render(); } });
-      wrap.append(inp); return;
+        onkeydown(e){ if (e.key === &quot;Enter&quot;){ e.preventDefault(); done(&quot;note&quot;); } if (e.key === &quot;Escape&quot;) done(null); },
+        onblur(e){ if (!keepEdit(e)) done(&quot;note&quot;); } });
+      wrap.append(el(&quot;div&quot;, { class: &quot;edit-wrap&quot; }, inp, editBar(done))); return;
     }
-    wrap.append(el(&quot;button&quot;, { type: &quot;button&quot;, class: &quot;chip&quot; + (S.lbl[id] != null ? &quot; edited&quot; : &quot;&quot;), &quot;aria-pressed&quot;: String(on),
+    wrap.append(el(&quot;button&quot;, { type: &quot;button&quot;, class: &quot;chip&quot; + (S.lbl[id] != null ? &quot; edited&quot; : baseLab(k, o) !== o ? &quot; saved&quot; : &quot;&quot;), &quot;aria-pressed&quot;: String(on),
       title: o === &quot;Other&quot; ? &quot;&quot; : &quot;Double-click to edit the wording&quot;, onclick(){
       const now = Date.now();
       if (o !== &quot;Other&quot; &amp;&amp; lastClick.id === id &amp;&amp; now - lastClick.t &lt; 400){
@@ -2509,14 +2728,18 @@ function branch(...rows){ return el(&quot;div&quot;, { class: &quot;branch&quot;
 function fixed(k, text){
   const cb = el(&quot;input&quot;, { type: &quot;checkbox&quot;, id: &quot;cb-&quot; + k, checked: S[k] ? &quot;checked&quot; : false, &quot;aria-label&quot;: &quot;Include in note&quot;, onchange(e){ S[k] = e.target.checked; render(); } });
   if (editing === &quot;txt:&quot; + k){
+    const done = mode =&gt; { if (editing !== &quot;txt:&quot; + k) return; const v = ta.value.trim(); editing = null;
+      if (mode === &quot;save&quot;){ delete S.txt[k]; saveWord(&quot;sentence&quot;, k, text, v); }
+      else if (mode === &quot;note&quot;){ if (!v || v === baseTxt(k, text)) delete S.txt[k]; else S.txt[k] = v; }
+      if (mode) S[k] = true; render(); };
     const ta = el(&quot;textarea&quot;, { class: &quot;txt&quot;, &quot;data-key&quot;: &quot;edit:txt:&quot; + k, &quot;aria-label&quot;: &quot;Edit sentence&quot;,
-      onkeydown(e){ if (e.key === &quot;Enter&quot; &amp;&amp; !e.shiftKey){ e.preventDefault(); e.target.blur(); } if (e.key === &quot;Escape&quot;){ editing = null; render(); } },
-      onblur(e){ if (editing !== &quot;txt:&quot; + k) return; const v = e.target.value.trim(); if (!v || v === text) delete S.txt[k]; else S.txt[k] = v; S[k] = true; editing = null; render(); } });
+      onkeydown(e){ if (e.key === &quot;Enter&quot; &amp;&amp; !e.shiftKey){ e.preventDefault(); done(&quot;note&quot;); } if (e.key === &quot;Escape&quot;) done(null); },
+      onblur(e){ if (!keepEdit(e)) done(&quot;note&quot;); } });
     ta.value = ft(k, text);
-    return el(&quot;div&quot;, { class: &quot;fixed&quot; }, cb, ta);
+    return el(&quot;div&quot;, { class: &quot;fixed&quot; }, cb, el(&quot;div&quot;, { class: &quot;edit-wrap&quot; }, ta, editBar(done)));
   }
   return el(&quot;div&quot;, { class: &quot;fixed&quot; + (S[k] ? &quot;&quot; : &quot; off&quot;) }, cb,
-    el(&quot;span&quot;, { class: S.txt[k] != null ? &quot;edited&quot; : &quot;&quot;, title: &quot;Double-click to edit the wording&quot;,
+    el(&quot;span&quot;, { class: S.txt[k] != null ? &quot;edited&quot; : baseTxt(k, text) !== text ? &quot;saved&quot; : &quot;&quot;, title: &quot;Double-click to edit the wording&quot;,
       ondblclick(){ editing = &quot;txt:&quot; + k; pendingFocus = &quot;edit:txt:&quot; + k; render(); } }, ft(k, text)));
 }
 function tick(k, text){
@@ -2909,6 +3132,7 @@ $(&quot;mView&quot;).onclick = () =&gt; $(&quot;note&quot;).scrollIntoView({ beh
 document.addEventListener(&quot;keydown&quot;, e =&gt; { if ((e.ctrlKey || e.metaKey) &amp;&amp; e.key === &quot;Enter&quot;){ e.preventDefault(); copyNote(); } });
 
 fresh(); render();
+window.DN_rerender = function(){ render(); };
 window.DN_apply = function(){
   const oldC = CLINICIAN, oldD = defaultDA();
   loadSettings();
@@ -2933,6 +3157,16 @@ window.DN_apply = function(){
     <button type="button" class="save" id="save">Save details</button><button type="button" class="reset" id="reset">Clear details</button><span class="status" id="status" role="status"></span>
   </div>
 </section>
+<section id="p-changes" aria-label="Template changes">
+  <div class="card">
+    <h1>Template changes</h1>
+    <p>Wording you saved with <em>Save to template</em>. It already shows in this browser. To make it permanent, press <strong>Copy for Claude</strong>, paste it into your Claude chat, and Claude will update the templates on GitHub. Once you're using the updated file, press <strong>Clear all</strong>.</p>
+    <ol id="clist"></ol>
+    <label for="cout">Message for Claude</label>
+    <textarea id="cout" class="out" readonly></textarea>
+    <button type="button" class="save" id="ccopy">Copy for Claude</button><button type="button" class="reset" id="cclear">Clear all</button><span class="status" id="cstatus" role="status"></span>
+  </div>
+</section>
 </main>
 <script>
 (function(){
@@ -2954,18 +3188,61 @@ window.DN_apply = function(){
   document.getElementById("reset").onclick = () => save({ clinician: DEF.clinician, das: DEF.das.slice() }, "Cleared");
   fill();
 
-  const keys = ['filling', 'extraction', 'prep', 'fit', 'endo', 'info'];
+  /* ---------- saved template wording (never patient details) ---------- */
+  const WKEY = "dentalnotes.wording";
+  const NAMES = { filling: "Filling", extraction: "Extraction", prep: "Indirect prep", fit: "Indirect fit", endo: "Endo" };
+  const same = (x, c) => x.tpl === c.tpl && x.kind === c.kind && x.field === c.field && x.from === c.from;
+  let wording = []; try { wording = JSON.parse(localStorage.getItem(WKEY) || "[]") || []; } catch(e){}
+  function storeW(){ try { localStorage.setItem(WKEY, JSON.stringify(wording)); return true; } catch(e){ return false; } }
+  function rerender(){ document.querySelectorAll("iframe").forEach(f => { try { f.contentWindow.DN_rerender && f.contentWindow.DN_rerender(); } catch(e){} }); }
+  window.DN_WORDING = { all: () => wording, set(c){ wording = wording.filter(x => !same(x, c)); if (c.to !== c.from) wording.push(c); const ok = storeW(); renderChanges(); return ok; } };
+  function changesText(){
+    return "Please apply these wording changes to the ClickNotes templates, then rebuild and push:\n\n" +
+      wording.map(c => "- " + (NAMES[c.tpl] || c.tpl) + ", " + c.kind + " (" + c.field + "): " + JSON.stringify(c.from) + " -> " + JSON.stringify(c.to)).join("\n");
+  }
+  const clist = document.getElementById("clist"), cout = document.getElementById("cout"), cstatus = document.getElementById("cstatus");
+  function renderChanges(){
+    const tab = document.querySelector('.tab[data-key="changes"]');
+    tab.hidden = !wording.length;
+    document.getElementById("ccount").textContent = wording.length ? "(" + wording.length + ")" : "";
+    clist.textContent = "";
+    wording.forEach(c => {
+      const li = document.createElement("li"); li.className = "chg";
+      const d = document.createElement("div"), b = document.createElement("b"), del = document.createElement("del"), ins = document.createElement("span");
+      b.textContent = (NAMES[c.tpl] || c.tpl) + " · " + (c.kind === "option" ? "option" : "sentence");
+      del.textContent = c.from; ins.textContent = c.to;
+      d.append(b, del, document.createElement("br"), "→ ", ins);
+      const u = document.createElement("button"); u.type = "button"; u.className = "reset"; u.textContent = "Undo";
+      u.onclick = () => { window.DN_WORDING.set(Object.assign({}, c, { to: c.from })); rerender(); };
+      li.append(d, u); clist.append(li);
+    });
+    cout.value = wording.length ? changesText() : "";
+    if (!wording.length && document.getElementById("p-changes").classList.contains("on")) show("info");
+  }
+  function flash(msg){ cstatus.textContent = msg; setTimeout(() => cstatus.textContent = "", 3000); }
+  document.getElementById("ccopy").onclick = () => {
+    const fallback = () => { cout.focus(); cout.select(); let ok = false; try { ok = document.execCommand("copy"); } catch(e){} flash(ok ? "Copied" : "Select the message above and copy it"); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(cout.value).then(() => flash("Copied"), fallback); else fallback();
+  };
+  document.getElementById("cclear").onclick = () => {
+    if (!confirm("Remove all " + wording.length + " saved wording changes from this browser?")) return;
+    wording = []; storeW(); renderChanges(); rerender();
+  };
+
+  const keys = ['filling', 'extraction', 'prep', 'fit', 'endo', 'info', 'changes'];
   function show(k){
-    if (!keys.includes(k)) k = keys[0];
+    if (!keys.includes(k) || (k === "changes" && !wording.length)) k = keys[0];
     document.querySelectorAll(".tab").forEach(t => t.setAttribute("aria-selected", String(t.dataset.key === k)));
     document.querySelectorAll("iframe").forEach(f => f.classList.toggle("on", f.id === "f-" + k));
     document.getElementById("p-info").classList.toggle("on", k === "info");
+    document.getElementById("p-changes").classList.toggle("on", k === "changes");
     document.title = document.querySelector('.tab[data-key="' + k + '"]').textContent + " · Dental notes";
     try { if (location.hash !== "#" + k) history.replaceState(null, "", "#" + k); } catch(e){ /* previews that block history changes: tabs still work */ }
   }
   document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => show(t.dataset.key)));
   window.addEventListener("hashchange", () => show(location.hash.slice(1)));
   document.addEventListener("keydown", e => { if (e.altKey && /^[1-5]$/.test(e.key)){ e.preventDefault(); show(keys[+e.key - 1]); } });
+  renderChanges();
   show(firstRun && !window.DN_SETTINGS.clinician ? "info" : location.hash.slice(1));
 })();
 </script>

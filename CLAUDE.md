@@ -14,6 +14,8 @@ Dental note builder used chairside by a general dentist in Auckland, New Zealand
 - Nothing is saved about patients: no localStorage, cookies or network calls for note content.
 - Lines only appear in the note when something is selected or a fixed sentence is ticked.
 - Every option button and fixed sentence can be double-clicked to edit its wording for the current note.
+- The edit box offers "This note only" (default; Enter or clicking away) or "Save to template". Saved wording is template wording only, kept in localStorage key `dentalnotes.wording` and listed on the shell's Changes tab, which builds a "Copy for Claude" message.
+- Applying a pasted change list: each line names the template, option or sentence, the field (last part of the state key, e.g. `prev` maps to the `PREV` list, `riskLine` to `RISK_TEXT`), and the old and new wording. Change that string in the constant in `src/`, rebuild, commit and push.
 - Option lists sit as constants at the top of each template's script; edit them there.
 - Dentist and DA names default to blank and come from the Your details tab.
 
