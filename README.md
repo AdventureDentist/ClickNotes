@@ -12,15 +12,12 @@ details** tab stores the dentist and dental assistant names in that browser only
 
 ## Editing
 
-To change wording from inside the app, double-click an option or sentence, edit it,
-then press **Save to template**. It shows straight away in that browser and appears
-on the **Changes** tab. Press **Copy for Claude** there and paste the message into
-Claude Code to have the templates updated on GitHub, then press **Clear all**.
-
-To edit by hand instead:
 The templates live in `src/`, one standalone HTML page each. After changing any of
 them, rebuild the combined file:
 
     python build.py
+
+This writes `dental-notes.html` (the public file) and `dental-notes-editor.html`, a private
+copy with extra tools for editing template wording. The editor copy is not committed.
 
 Each page can also be opened on its own for testing.

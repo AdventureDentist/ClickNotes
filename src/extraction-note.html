@@ -76,6 +76,7 @@ textarea.txt{min-height:64px;resize:vertical;max-width:560px}
 .fixed.off span{color:var(--muted);text-decoration:line-through}
 .fixed textarea{flex:1;min-height:60px}
 .edited{text-decoration:underline dotted;text-underline-offset:3px}
+/* EDITOR-ONLY START */
 .saved{text-decoration:underline solid;text-underline-offset:3px}
 .edit-wrap{display:flex;flex-wrap:wrap;gap:6px;align-items:center;flex:1 1 100%;max-width:720px}
 .fixed .edit-wrap{flex:1}
@@ -83,6 +84,7 @@ textarea.txt{min-height:64px;resize:vertical;max-width:560px}
 .ebtn{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:7px;padding:5px 10px;font-size:.82rem}
 .ebtn:hover{border-color:var(--muted)}
 .ebtn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+/* EDITOR-ONLY END */
 .chip-edit{width:auto;min-width:220px;max-width:100%;flex:1 1 260px;border-color:var(--accent)}
 .tick{display:inline-flex;gap:7px;align-items:center;background:var(--chip);border-radius:999px;padding:5px 12px 5px 9px;font-size:.88rem;cursor:pointer}
 .tick input{width:16px;height:16px;accent-color:var(--accent);margin:0}
@@ -245,28 +247,8 @@ function el(tag, attrs, ...kids){
   return n;
 }
 function has(k, v){ const x = S[k]; return Array.isArray(x) ? x.includes(v) : x === v; }
-/* ---------- saved wording ("Save to template"): template wording only, never patient details ---------- */
-const TPL = "extraction", WKEY = "dentalnotes.wording";
-function wStore(){
-  try { if (window.parent && window.parent !== window && window.parent.DN_WORDING) return window.parent.DN_WORDING; } catch(e){}
-  if (!window.DN_WORDING){
-    let a = []; try { a = JSON.parse(localStorage.getItem(WKEY) || "[]") || []; } catch(e){}
-    const same = (x, c) => x.tpl === c.tpl && x.kind === c.kind && x.field === c.field && x.from === c.from;
-    window.DN_WORDING = { all: () => a, set(c){ a = a.filter(x => !same(x, c)); if (c.to !== c.from) a.push(c);
-      try { localStorage.setItem(WKEY, JSON.stringify(a)); return true; } catch(e){ return false; } } };
-  }
-  return window.DN_WORDING;
-}
-const fieldOf = k => String(k).split(".").pop();
-function savedWord(kind, k, from){ const f = fieldOf(k); const c = wStore().all().find(x => x.tpl === TPL && x.kind === kind && x.field === f && x.from === from); return c ? c.to : null; }
-function baseLab(k, o){ const v = savedWord("option", k, o); return v != null ? v : o; }
-function baseTxt(k, def){ const v = savedWord("sentence", k, def); return v != null ? v : def; }
-function saveWord(kind, k, from, to){
-  const ok = wStore().set({ tpl: TPL, kind, field: fieldOf(k), from, to: to || from });
-  toast(ok ? "Saved to template. See the Changes tab." : "Saved for now, but this browser won’t remember it.");
-}
-function lab(k, o){ const v = S.lbl[k + "|" + o]; return v != null ? v : baseLab(k, o); }
-function ft(k, def){ const v = S.txt[k]; return v != null ? v : baseTxt(k, def); }
+function lab(k, o){ const v = S.lbl[k + "|" + o]; return v != null ? v : o; }
+function ft(k, def){ const v = S.txt[k]; return v != null ? v : def; }
 function one(k){ const v = S[k]; if (!v) return ""; return v === "Other" ? (S[k + "~o"] || "").trim() : lab(k, v); }
 function many(k, opts){
   const a = S[k] || [];
@@ -283,30 +265,19 @@ function sent(s){ s = (s || "").trim(); if (!s) return ""; s = s.charAt(0).toUpp
 
 /* ---------- UI builders ---------- */
 let lastClick = { id: null, t: 0, prev: null }, editing = null;
-let barDown = false;
-document.addEventListener("pointerup", () => setTimeout(() => { barDown = false; }, 400));
-function keepEdit(e){ const r = e.relatedTarget; return barDown || !!(r && r.closest && r.closest(".edit-bar")); }
-function editBar(done){
-  const b = (txt, mode, cls) => el("button", { type: "button", class: "ebtn" + (cls ? " " + cls : ""),
-    onpointerdown(){ barDown = true; }, onmousedown(e){ e.preventDefault(); }, onclick(){ barDown = false; done(mode); } }, txt);
-  return el("div", { class: "edit-bar" }, b("This note only", "note"), b("Save to template", "save", "primary"), b("Cancel", null));
-}
 function chips(k, opts, multi){
   const wrap = el("div", { class: "chips" + (multi ? " multi" : ""), role: "group" });
   opts.forEach(o => {
     const id = k + "|" + o;
     const on = multi ? (S[k] || []).includes(o) : S[k] === o;
     if (editing === id){
-      const done = mode => { if (editing !== id) return; const v = inp.value.trim(); editing = null;
-        if (mode === "save"){ delete S.lbl[id]; saveWord("option", k, o, v); }
-        else if (mode === "note"){ if (!v || v === baseLab(k, o)) delete S.lbl[id]; else S.lbl[id] = v; }
-        if (mode && !on){ if (multi) S[k] = (S[k] || []).concat(o); else S[k] = o; } render(); };
       const inp = el("input", { type: "text", class: "txt chip-edit", value: lab(k, o), "data-key": "edit:" + id, "aria-label": "Edit option text",
-        onkeydown(e){ if (e.key === "Enter"){ e.preventDefault(); done("note"); } if (e.key === "Escape") done(null); },
-        onblur(e){ if (!keepEdit(e)) done("note"); } });
-      wrap.append(el("div", { class: "edit-wrap" }, inp, editBar(done))); return;
+        onkeydown(e){ if (e.key === "Enter"){ e.preventDefault(); e.target.blur(); } if (e.key === "Escape"){ editing = null; render(); } },
+        onblur(e){ if (editing !== id) return; const v = e.target.value.trim(); if (!v || v === o) delete S.lbl[id]; else S.lbl[id] = v;
+          if (!on){ if (multi) S[k] = (S[k] || []).concat(o); else S[k] = o; } editing = null; render(); } });
+      wrap.append(inp); return;
     }
-    wrap.append(el("button", { type: "button", class: "chip" + (S.lbl[id] != null ? " edited" : baseLab(k, o) !== o ? " saved" : ""), "aria-pressed": String(on),
+    wrap.append(el("button", { type: "button", class: "chip" + (S.lbl[id] != null ? " edited" : ""), "aria-pressed": String(on),
       title: o === "Other" ? "" : "Double-click to edit the wording", onclick(){
       const now = Date.now();
       if (o !== "Other" && lastClick.id === id && now - lastClick.t < 400){
@@ -336,18 +307,14 @@ function branch(...rows){ return el("div", { class: "branch" }, ...rows); }
 function fixed(k, text){
   const cb = el("input", { type: "checkbox", id: "cb-" + k, checked: S[k] ? "checked" : false, "aria-label": "Include in note", onchange(e){ S[k] = e.target.checked; render(); } });
   if (editing === "txt:" + k){
-    const done = mode => { if (editing !== "txt:" + k) return; const v = ta.value.trim(); editing = null;
-      if (mode === "save"){ delete S.txt[k]; saveWord("sentence", k, text, v); }
-      else if (mode === "note"){ if (!v || v === baseTxt(k, text)) delete S.txt[k]; else S.txt[k] = v; }
-      if (mode) S[k] = true; render(); };
     const ta = el("textarea", { class: "txt", "data-key": "edit:txt:" + k, "aria-label": "Edit sentence",
-      onkeydown(e){ if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); done("note"); } if (e.key === "Escape") done(null); },
-      onblur(e){ if (!keepEdit(e)) done("note"); } });
+      onkeydown(e){ if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); e.target.blur(); } if (e.key === "Escape"){ editing = null; render(); } },
+      onblur(e){ if (editing !== "txt:" + k) return; const v = e.target.value.trim(); if (!v || v === text) delete S.txt[k]; else S.txt[k] = v; S[k] = true; editing = null; render(); } });
     ta.value = ft(k, text);
-    return el("div", { class: "fixed" }, cb, el("div", { class: "edit-wrap" }, ta, editBar(done)));
+    return el("div", { class: "fixed" }, cb, ta);
   }
   return el("div", { class: "fixed" + (S[k] ? "" : " off") }, cb,
-    el("span", { class: S.txt[k] != null ? "edited" : baseTxt(k, text) !== text ? "saved" : "", title: "Double-click to edit the wording",
+    el("span", { class: S.txt[k] != null ? "edited" : "", title: "Double-click to edit the wording",
       ondblclick(){ editing = "txt:" + k; pendingFocus = "edit:txt:" + k; render(); } }, ft(k, text)));
 }
 function tick(k, text){
@@ -609,8 +576,91 @@ $("newBtn").onclick = $("mNew").onclick = newNote;
 $("mView").onclick = () => $("note").scrollIntoView({ behavior: "smooth", block: "start" });
 document.addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && e.key === "Enter"){ e.preventDefault(); copyNote(); } });
 
-fresh(); render();
+/* EDITOR-ONLY START */
+/* "Save to template": only in dental-notes-editor.html. build.py strips this block from the public file.
+   The lab, ft, chips and fixed below replace the versions above. */
+/* ---------- saved wording ("Save to template"): template wording only, never patient details ---------- */
+const TPL = "extraction", WKEY = "dentalnotes.wording";
+function wStore(){
+  try { if (window.parent && window.parent !== window && window.parent.DN_WORDING) return window.parent.DN_WORDING; } catch(e){}
+  if (!window.DN_WORDING){
+    let a = []; try { a = JSON.parse(localStorage.getItem(WKEY) || "[]") || []; } catch(e){}
+    const same = (x, c) => x.tpl === c.tpl && x.kind === c.kind && x.field === c.field && x.from === c.from;
+    window.DN_WORDING = { all: () => a, set(c){ a = a.filter(x => !same(x, c)); if (c.to !== c.from) a.push(c);
+      try { localStorage.setItem(WKEY, JSON.stringify(a)); return true; } catch(e){ return false; } } };
+  }
+  return window.DN_WORDING;
+}
+const fieldOf = k => String(k).split(".").pop();
+function savedWord(kind, k, from){ const f = fieldOf(k); const c = wStore().all().find(x => x.tpl === TPL && x.kind === kind && x.field === f && x.from === from); return c ? c.to : null; }
+function baseLab(k, o){ const v = savedWord("option", k, o); return v != null ? v : o; }
+function baseTxt(k, def){ const v = savedWord("sentence", k, def); return v != null ? v : def; }
+function saveWord(kind, k, from, to){
+  const ok = wStore().set({ tpl: TPL, kind, field: fieldOf(k), from, to: to || from });
+  toast(ok ? "Saved to template. See the Changes tab." : "Saved for now, but this browser won’t remember it.");
+}
+function lab(k, o){ const v = S.lbl[k + "|" + o]; return v != null ? v : baseLab(k, o); }
+function ft(k, def){ const v = S.txt[k]; return v != null ? v : baseTxt(k, def); }
+let barDown = false;
+document.addEventListener("pointerup", () => setTimeout(() => { barDown = false; }, 400));
+function keepEdit(e){ const r = e.relatedTarget; return barDown || !!(r && r.closest && r.closest(".edit-bar")); }
+function editBar(done){
+  const b = (txt, mode, cls) => el("button", { type: "button", class: "ebtn" + (cls ? " " + cls : ""),
+    onpointerdown(){ barDown = true; }, onmousedown(e){ e.preventDefault(); }, onclick(){ barDown = false; done(mode); } }, txt);
+  return el("div", { class: "edit-bar" }, b("This note only", "note"), b("Save to template", "save", "primary"), b("Cancel", null));
+}
+function chips(k, opts, multi){
+  const wrap = el("div", { class: "chips" + (multi ? " multi" : ""), role: "group" });
+  opts.forEach(o => {
+    const id = k + "|" + o;
+    const on = multi ? (S[k] || []).includes(o) : S[k] === o;
+    if (editing === id){
+      const done = mode => { if (editing !== id) return; const v = inp.value.trim(); editing = null;
+        if (mode === "save"){ delete S.lbl[id]; saveWord("option", k, o, v); }
+        else if (mode === "note"){ if (!v || v === baseLab(k, o)) delete S.lbl[id]; else S.lbl[id] = v; }
+        if (mode && !on){ if (multi) S[k] = (S[k] || []).concat(o); else S[k] = o; } render(); };
+      const inp = el("input", { type: "text", class: "txt chip-edit", value: lab(k, o), "data-key": "edit:" + id, "aria-label": "Edit option text",
+        onkeydown(e){ if (e.key === "Enter"){ e.preventDefault(); done("note"); } if (e.key === "Escape") done(null); },
+        onblur(e){ if (!keepEdit(e)) done("note"); } });
+      wrap.append(el("div", { class: "edit-wrap" }, inp, editBar(done))); return;
+    }
+    wrap.append(el("button", { type: "button", class: "chip" + (S.lbl[id] != null ? " edited" : baseLab(k, o) !== o ? " saved" : ""), "aria-pressed": String(on),
+      title: o === "Other" ? "" : "Double-click to edit the wording", onclick(){
+      const now = Date.now();
+      if (o !== "Other" && lastClick.id === id && now - lastClick.t < 400){
+        S[k] = lastClick.prev; lastClick = { id: null, t: 0, prev: null };
+        editing = id; pendingFocus = "edit:" + id; render(); return;
+      }
+      lastClick = { id, t: now, prev: Array.isArray(S[k]) ? S[k].slice() : S[k] };
+      if (multi){ const a = (S[k] || []).slice(); const i = a.indexOf(o); i >= 0 ? a.splice(i, 1) : a.push(o); S[k] = a; }
+      else S[k] = S[k] === o ? "" : o;
+      if (o === "Other" && has(k, "Other")) pendingFocus = k + "~o";
+      render();
+    }}, lab(k, o)));
+  });
+  if (has(k, "Other")) wrap.append(textInput(k + "~o", "Type here", "txt other"));
+  return wrap;
+}
+function fixed(k, text){
+  const cb = el("input", { type: "checkbox", id: "cb-" + k, checked: S[k] ? "checked" : false, "aria-label": "Include in note", onchange(e){ S[k] = e.target.checked; render(); } });
+  if (editing === "txt:" + k){
+    const done = mode => { if (editing !== "txt:" + k) return; const v = ta.value.trim(); editing = null;
+      if (mode === "save"){ delete S.txt[k]; saveWord("sentence", k, text, v); }
+      else if (mode === "note"){ if (!v || v === baseTxt(k, text)) delete S.txt[k]; else S.txt[k] = v; }
+      if (mode) S[k] = true; render(); };
+    const ta = el("textarea", { class: "txt", "data-key": "edit:txt:" + k, "aria-label": "Edit sentence",
+      onkeydown(e){ if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); done("note"); } if (e.key === "Escape") done(null); },
+      onblur(e){ if (!keepEdit(e)) done("note"); } });
+    ta.value = ft(k, text);
+    return el("div", { class: "fixed" }, cb, el("div", { class: "edit-wrap" }, ta, editBar(done)));
+  }
+  return el("div", { class: "fixed" + (S[k] ? "" : " off") }, cb,
+    el("span", { class: S.txt[k] != null ? "edited" : baseTxt(k, text) !== text ? "saved" : "", title: "Double-click to edit the wording",
+      ondblclick(){ editing = "txt:" + k; pendingFocus = "edit:txt:" + k; render(); } }, ft(k, text)));
+}
 window.DN_rerender = function(){ render(); };
+/* EDITOR-ONLY END */
+fresh(); render();
 window.DN_apply = function(){
   const oldC = CLINICIAN, oldD = defaultDA();
   loadSettings();
