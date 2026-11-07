@@ -187,11 +187,12 @@ const CARTS = ["1.8ml","2.2ml","Other"];
 const SURFACES = ["M","O","D","B","L","P","I"];
 const OCC_PRE = "Occlusion checked with articulating paper, contacts noted in ICP and excursions prior to restoration.";
 const MOIST = ["rubber dam","cotton wool rolls + high volume suction","Optragate","Greater Curve","Other"];
-const PREV = ["Previously unrestored tooth","Old restoration removed with high speed diamond","Old restoration already out","Lock cut into existing restoration","Other"];
-const CARIES = ["Caries accessed with high speed diamond","Caries free cavity","Other"];
-const CARIES2 = ["Periphery caries removed from the ADJ and prepared to hard dentine","All caries cleared with rosehead","Other"];
+const PREV = ["Unrestored tooth","Old restoration removed","Old restoration already out","Lock cut into existing restoration","Other"];
+const CARIES = ["Caries accessed","Caries free cavity","Other"];
+const CARIES2 = ["Selective caries removal, ADJ cleared","Complete caries removal","Other"];
 const SCR = ["removal to firm dentine over pulp","removal to soft dentine over pulp","Other"];
 const LINER = ["placed","not required"];
+const AMALGAM_TEXT = "Amalgam condensed and burnished.";
 const PROTOCOL = "Base sealed with flowable composite, followed by snowplough technique with flowable and packable composite.";
 const LINER_MAT = ["Dycal","Life","Ionoseal","TheraCal","Vitrebond","Biodentine","Other"];
 const MATRIX = ["Greater Curve band","Circumferential matrix band","Sectional matrix band and ring","Mylar strip","PTFE","No matrix band required","Other"];
@@ -204,7 +205,6 @@ const OCC_AFTER = ["and adjusted, patient comfortable with bite","no adjustment 
 const POST_BASE = "Patient advised to return if there are any problems. Advised some sensitivity is normal however this should settle. Any prolonged sensitivity or symptoms and the tooth may require further treatment e.g. RCT or XLA.";
 const POST_PULP = "Post op pain warning given as decay was close to pulp. Analgesics advised if painful. If pain does not settle after a couple of weeks then RCT/XLA may be necessary.";
 const POST_GIC = "Patient is aware that GIC is often a short-medium term filling material.";
-const GIC_OPTS = ["Patient will need to return for a permanent filling","In this case, we will leave it as a permanent filling but it will require regular reviews","Advised the prognosis of this tooth is poor"];
 const POST_COMP = "Advised that some sensitivity is normal. Should settle down in a couple of days.";
 
 /* ---------- state ---------- */
@@ -214,7 +214,7 @@ const uid = () => "r" + Math.random().toString(36).slice(2, 8);
 function newRest(){
   const id = uid();
   Object.assign(S, { [id + ".occPre"]: true, [id + ".moist"]: ["cotton wool rolls + high volume suction"], [id + ".mat"]: "Greater Curve band",
-    [id + ".gc"]: "Standard", [id + ".proto"]: true,
+    [id + ".gc"]: "Standard", [id + ".proto"]: true, [id + ".amal"]: true,
     [id + ".ss"]: true, [id + ".brand"]: BRANDS[0], [id + ".cod"]: true, [id + ".lin"]: "not required" });
   return id;
 }
@@ -383,12 +383,13 @@ function restSection(id, i){
   const mat = S[k("mat")], mrows = [];
   if (mat === "Greater Curve band"){
     mrows.push(row("Band", chips(k("gc"), GC_TYPES)));
-    mrows.push(row("Band options", el("div", { class: "chips" }, tick(k("ss"), "Stainless steel (brass if unticked)"), tick(k("cod"), "Contact opening drilled"), tick(k("thin"), "Ultra thin"))));
+    mrows.push(row("Band options", el("div", { class: "chips" }, tick(k("ss"), "Stainless steel (brass if unticked)"), tick(k("cod"), "Contact opening"), tick(k("thin"), "Ultra thin"))));
   }
   if (mat && mat !== "No matrix band required") mrows.push(row("Wedge", tick(k("wedge"), "Wedge placed")));
   if (mrows.length) body.push(branch(...mrows));
   body.push(row("Material", chips(k("matl"), MATERIALS)));
   if (S[k("matl")] === "Composite") body.push(branch(row("Composite", chips(k("brand"), BRANDS)), row("Shade", chips(k("shade"), SHADES)), fixed(k("proto"), PROTOCOL)));
+  if (S[k("matl")] === "Amalgam") body.push(branch(fixed(k("amal"), AMALGAM_TEXT)));
   body.push(row("Occlusion checked", chips(k("occ"), OCC_AFTER)));
   const head = el("span", { class: "rest-h" }, tag,
     R.length > 1 ? el("span", { class: "remove", role: "button", tabindex: "0",
@@ -403,7 +404,7 @@ function postSection(){
   const comp = anyRest("matl", v => v === "Composite");
   const body = [ fixed("postBase", POST_BASE) ];
   if (pulp) body.push(fixed("postPulp", POST_PULP));
-  if (gic){ body.push(fixed("postGic", POST_GIC)); body.push(branch(row("GIC follow-up", chips("gicOpts", GIC_OPTS, true), "pick any"))); }
+  if (gic) body.push(fixed("postGic", POST_GIC));
   if (comp) body.push(fixed("postComp", POST_COMP));
   body.push(row("Other advice", textArea("postExtra", "Any other advice given")));
   return section("post", "Post-op discussion", body);
@@ -438,7 +439,7 @@ function buildNote(){
   if (one("mh")) a.push("MH checked: " + one("mh"));
   if (S.riskLine){
     const r = many("risks", RISKS);
-    a.push(sent(ft("riskLine", RISK_TEXT)) + (r.length ? " Also discussed case specific risk(s) of: " + andList(r.map(x => x.charAt(0).toLowerCase() + x.slice(1))) + "." : ""));
+    a.push(sent(ft("riskLine", RISK_TEXT)) + (r.length ? " Also discussed case specific risk(s) of: " + andList(r.map(x => /^[A-Z][a-z]/.test(x) ? x.charAt(0).toLowerCase() + x.slice(1) : x)) + "." : ""));
   }
   if (S.consent) a.push(sent(ft("consent", CONSENT_TEXT)));
   if (a.length > 1) out.push(a.join("\n"));
@@ -492,7 +493,7 @@ function buildNote(){
         const g = S[k("gc")];
         const type = g === "Standard" || g === "Wide" ? lab(k("gc"), g).toLowerCase() : one(k("gc"));
         ms = "Greater Curve " + [type, S[k("thin")] ? "ultra thin" : "", S[k("ss")] ? "stainless steel" : "brass"].filter(Boolean).join(" ") + " band";
-        if (S[k("cod")]) ms += ", contact opening drilled";
+        if (S[k("cod")]) ms += ", contact opening";
       } else ms = one(k("mat"));
       if (ms && S[k("wedge")] && mat !== "No matrix band required") ms += ", wedge placed";
       if (ms) lines.push("Matrix system: " + ms + ".");
@@ -503,7 +504,7 @@ function buildNote(){
       if (S[k("proto")]) lines.push(sent(ft(k("proto"), PROTOCOL)));
     }
     else if (m === "GIC") lines.push("GIC placed, vaseline applied.");
-    else if (m === "Amalgam") lines.push("Amalgam placed, condensed and burnished.");
+    else if (m === "Amalgam") lines.push(S[k("amal")] ? sent(ft(k("amal"), AMALGAM_TEXT)) : "Amalgam placed.");
     else if (m === "RMGIC") lines.push("RMGIC placed and cured.");
     else if (m === "Other" && one(k("matl"))) lines.push(sent(one(k("matl")) + " restoration placed"));
     const occ = S[k("occ")];
@@ -521,7 +522,6 @@ function buildNote(){
   if (S.postBase) p.push(sent(ft("postBase", POST_BASE)));
   if (pulp && S.postPulp) p.push(sent(ft("postPulp", POST_PULP)));
   if (gic && S.postGic) p.push(sent(ft("postGic", POST_GIC)));
-  if (gic) many("gicOpts", GIC_OPTS).forEach(o => p.push(sent(o)));
   if (comp && S.postComp) p.push(sent(ft("postComp", POST_COMP)));
   if ((S.postExtra || "").trim()) p.push(sent(S.postExtra));
   if (p.length > 1) out.push(p.join("\n"));

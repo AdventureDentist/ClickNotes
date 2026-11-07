@@ -176,14 +176,14 @@ loadSettings();
 const CO_LIST = ["Nil","Other"];
 const REASONS = ["Unrestorable caries","Periodontal disease","Fractured tooth","Failed root canal treatment","Pericoronitis","Orthodontic","Patient preference","Other"];
 const ALTS = ["No treatment","Restoration","Root canal treatment","Referral to specialist","Monitor","Other"];
-const GAP = ["Nil (leave gap)","Implant","Bridge","Denture","Orthodontics","Discuss next appointment","Add to denture today","Other"];
+const GAP = ["Nil (leave gap)","Implant","Bridge","Denture","Orthodontics","Denture addition","Discuss next appointment","Other"];
 const RISK_TEXT = "Risks given: pain, bruising, swelling, bleeding, dry socket, infection, damage to adjacent teeth, fractured tooth needing referral.";
-const SPEC_RISKS = ["Risk of MRONJ","Oro-antral communication","Altered sensation (IAN/lingual nerve)","Retained root fragment","Damage to adjacent restoration","Other"];
+const SPEC_RISKS = ["Risk of MRONJ","OAC","Altered sensation or damage (IAN/lingual nerve)","Retained root fragment","Damage to adjacent restoration","Other"];
 const MRONJ_TEXT = "risk for MRONJ based on length of time this has been taken for, and the reason for use. Discussed with the patient the relevance of this, and a plan for follow up based on risk level. Advised that many dentists refer these extractions to a hospital setting, however their initial management does not differ from general practice. Explained that this option is still available to them if they wish, but usually we would review and refer if issues arise with healing and signs of MRONJ are present.";
 const CONSENT_TEXT = "Verbal consent given to proceed.";
 
 const MH_LIST = ["No changes","Changes updated","Other"];
-const MEDS = ["No blood thinners, bisphosphonates or other medication to note","Blood thinners","Drugs associated with MRONJ","Previous head and neck radiotherapy - risk of ORN","Other"];
+const MEDS = ["No significant medical history of note","Blood thinners","Higher risk of MRONJ","Previous head and neck radiotherapy - risk of ORN","Other"];
 const SMOKER = ["Non-smoker","Smoker"];
 
 const LA_TYPES = ["Nil","Infiltration","IANB","IANB + infiltration","Other"];
@@ -205,7 +205,7 @@ const V_TEXT = "Advised patient that sutures will resorb in 4-5 weeks with no ne
 const HAEM_TEXT = "Haemostasis of socket in chair.";
 
 const COOP = ["Good","Moderate","Poor","Other"];
-const POI_TEXT = "Post op instructions given: no rinsing for 24 hours, swallow saliva, bite on pack if bleeding, painkillers, avoid hot drinks, salt water rinses from 24 hours onwards, to contact if persistent issues - sheet given with information with bite packs. Explained that some swelling and bruising is normal and painkillers (paracetamol and ibuprofen if able to take) can be taken before the numbness wears off to manage pain.";
+const POI_TEXT = "Post-op care explained and written information sheet provided along with spare bite packs. Advised to avoid rinsing for the first 24 hours and to swallow rather than spit, to bite firmly on a pack if any bleeding, to avoid hot drinks today and to start warm salt water rinses from tomorrow. Patient to get in touch if any problems persist. Advised that swelling and bruising are expected, and that pain relief (paracetamol, plus ibuprofen if suitable) is best started before the numbness wears off.";
 const SINUS_TEXT = "Sinus instructions advised.";
 const SMOKE_TEXT = "Advised patient not to smoke, and of the increased risks of dry socket and impaired healing with smoking.";
 
@@ -433,7 +433,7 @@ function extSection(){
 }
 function postSection(){
   const body = [ row("Co-operation", chips("coop", COOP)), fixed("poi", POI_TEXT) ];
-  if (has("spec", "Oro-antral communication")) body.push(fixed("sinus", SINUS_TEXT));
+  if (has("spec", "OAC")) body.push(fixed("sinus", SINUS_TEXT));
   if (S.smoker === "Smoker") body.push(fixed("smoke", SMOKE_TEXT));
   body.push(row("Other advice", textArea("postExtra", "Any other advice given")));
   return section("post", "Post-op discussion", body);
@@ -458,7 +458,7 @@ function laLine(kb, prefix){
   const parts = [agent, volStr].filter(Boolean);
   return prefix + (parts.length ? ": " + parts.join(", ") : "");
 }
-const lc = x => x.charAt(0).toLowerCase() + x.slice(1);
+const lc = x => x && /^[A-Z][a-z]/.test(x) ? x.charAt(0).toLowerCase() + x.slice(1) : x;
 function buildNote(){
   const out = [];
   const a = ["** Extraction Appointment **"];
@@ -535,7 +535,7 @@ function buildNote(){
   const p = ["** Post-op Discussion **"];
   if (one("coop")) p.push("Co-operation: " + one("coop") + ".");
   if (S.poi) p.push(sent(ft("poi", POI_TEXT)));
-  if (has("spec", "Oro-antral communication") && S.sinus) p.push(sent(ft("sinus", SINUS_TEXT)));
+  if (has("spec", "OAC") && S.sinus) p.push(sent(ft("sinus", SINUS_TEXT)));
   if (S.smoker === "Smoker" && S.smoke) p.push(sent(ft("smoke", SMOKE_TEXT)));
   if ((S.postExtra || "").trim()) p.push(sent(S.postExtra));
   if (p.length > 1) out.push(p.join("\n"));

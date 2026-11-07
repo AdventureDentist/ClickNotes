@@ -222,11 +222,12 @@ const CARTS = [&quot;1.8ml&quot;,&quot;2.2ml&quot;,&quot;Other&quot;];
 const SURFACES = [&quot;M&quot;,&quot;O&quot;,&quot;D&quot;,&quot;B&quot;,&quot;L&quot;,&quot;P&quot;,&quot;I&quot;];
 const OCC_PRE = &quot;Occlusion checked with articulating paper, contacts noted in ICP and excursions prior to restoration.&quot;;
 const MOIST = [&quot;rubber dam&quot;,&quot;cotton wool rolls + high volume suction&quot;,&quot;Optragate&quot;,&quot;Greater Curve&quot;,&quot;Other&quot;];
-const PREV = [&quot;Previously unrestored tooth&quot;,&quot;Old restoration removed with high speed diamond&quot;,&quot;Old restoration already out&quot;,&quot;Lock cut into existing restoration&quot;,&quot;Other&quot;];
-const CARIES = [&quot;Caries accessed with high speed diamond&quot;,&quot;Caries free cavity&quot;,&quot;Other&quot;];
-const CARIES2 = [&quot;Periphery caries removed from the ADJ and prepared to hard dentine&quot;,&quot;All caries cleared with rosehead&quot;,&quot;Other&quot;];
+const PREV = [&quot;Unrestored tooth&quot;,&quot;Old restoration removed&quot;,&quot;Old restoration already out&quot;,&quot;Lock cut into existing restoration&quot;,&quot;Other&quot;];
+const CARIES = [&quot;Caries accessed&quot;,&quot;Caries free cavity&quot;,&quot;Other&quot;];
+const CARIES2 = [&quot;Selective caries removal, ADJ cleared&quot;,&quot;Complete caries removal&quot;,&quot;Other&quot;];
 const SCR = [&quot;removal to firm dentine over pulp&quot;,&quot;removal to soft dentine over pulp&quot;,&quot;Other&quot;];
 const LINER = [&quot;placed&quot;,&quot;not required&quot;];
+const AMALGAM_TEXT = &quot;Amalgam condensed and burnished.&quot;;
 const PROTOCOL = &quot;Base sealed with flowable composite, followed by snowplough technique with flowable and packable composite.&quot;;
 const LINER_MAT = [&quot;Dycal&quot;,&quot;Life&quot;,&quot;Ionoseal&quot;,&quot;TheraCal&quot;,&quot;Vitrebond&quot;,&quot;Biodentine&quot;,&quot;Other&quot;];
 const MATRIX = [&quot;Greater Curve band&quot;,&quot;Circumferential matrix band&quot;,&quot;Sectional matrix band and ring&quot;,&quot;Mylar strip&quot;,&quot;PTFE&quot;,&quot;No matrix band required&quot;,&quot;Other&quot;];
@@ -239,7 +240,6 @@ const OCC_AFTER = [&quot;and adjusted, patient comfortable with bite&quot;,&quot
 const POST_BASE = &quot;Patient advised to return if there are any problems. Advised some sensitivity is normal however this should settle. Any prolonged sensitivity or symptoms and the tooth may require further treatment e.g. RCT or XLA.&quot;;
 const POST_PULP = &quot;Post op pain warning given as decay was close to pulp. Analgesics advised if painful. If pain does not settle after a couple of weeks then RCT/XLA may be necessary.&quot;;
 const POST_GIC = &quot;Patient is aware that GIC is often a short-medium term filling material.&quot;;
-const GIC_OPTS = [&quot;Patient will need to return for a permanent filling&quot;,&quot;In this case, we will leave it as a permanent filling but it will require regular reviews&quot;,&quot;Advised the prognosis of this tooth is poor&quot;];
 const POST_COMP = &quot;Advised that some sensitivity is normal. Should settle down in a couple of days.&quot;;
 
 /* ---------- state ---------- */
@@ -249,7 +249,7 @@ const uid = () =&gt; &quot;r&quot; + Math.random().toString(36).slice(2, 8);
 function newRest(){
   const id = uid();
   Object.assign(S, { [id + &quot;.occPre&quot;]: true, [id + &quot;.moist&quot;]: [&quot;cotton wool rolls + high volume suction&quot;], [id + &quot;.mat&quot;]: &quot;Greater Curve band&quot;,
-    [id + &quot;.gc&quot;]: &quot;Standard&quot;, [id + &quot;.proto&quot;]: true,
+    [id + &quot;.gc&quot;]: &quot;Standard&quot;, [id + &quot;.proto&quot;]: true, [id + &quot;.amal&quot;]: true,
     [id + &quot;.ss&quot;]: true, [id + &quot;.brand&quot;]: BRANDS[0], [id + &quot;.cod&quot;]: true, [id + &quot;.lin&quot;]: &quot;not required&quot; });
   return id;
 }
@@ -418,12 +418,13 @@ function restSection(id, i){
   const mat = S[k(&quot;mat&quot;)], mrows = [];
   if (mat === &quot;Greater Curve band&quot;){
     mrows.push(row(&quot;Band&quot;, chips(k(&quot;gc&quot;), GC_TYPES)));
-    mrows.push(row(&quot;Band options&quot;, el(&quot;div&quot;, { class: &quot;chips&quot; }, tick(k(&quot;ss&quot;), &quot;Stainless steel (brass if unticked)&quot;), tick(k(&quot;cod&quot;), &quot;Contact opening drilled&quot;), tick(k(&quot;thin&quot;), &quot;Ultra thin&quot;))));
+    mrows.push(row(&quot;Band options&quot;, el(&quot;div&quot;, { class: &quot;chips&quot; }, tick(k(&quot;ss&quot;), &quot;Stainless steel (brass if unticked)&quot;), tick(k(&quot;cod&quot;), &quot;Contact opening&quot;), tick(k(&quot;thin&quot;), &quot;Ultra thin&quot;))));
   }
   if (mat &amp;&amp; mat !== &quot;No matrix band required&quot;) mrows.push(row(&quot;Wedge&quot;, tick(k(&quot;wedge&quot;), &quot;Wedge placed&quot;)));
   if (mrows.length) body.push(branch(...mrows));
   body.push(row(&quot;Material&quot;, chips(k(&quot;matl&quot;), MATERIALS)));
   if (S[k(&quot;matl&quot;)] === &quot;Composite&quot;) body.push(branch(row(&quot;Composite&quot;, chips(k(&quot;brand&quot;), BRANDS)), row(&quot;Shade&quot;, chips(k(&quot;shade&quot;), SHADES)), fixed(k(&quot;proto&quot;), PROTOCOL)));
+  if (S[k(&quot;matl&quot;)] === &quot;Amalgam&quot;) body.push(branch(fixed(k(&quot;amal&quot;), AMALGAM_TEXT)));
   body.push(row(&quot;Occlusion checked&quot;, chips(k(&quot;occ&quot;), OCC_AFTER)));
   const head = el(&quot;span&quot;, { class: &quot;rest-h&quot; }, tag,
     R.length &gt; 1 ? el(&quot;span&quot;, { class: &quot;remove&quot;, role: &quot;button&quot;, tabindex: &quot;0&quot;,
@@ -438,7 +439,7 @@ function postSection(){
   const comp = anyRest(&quot;matl&quot;, v =&gt; v === &quot;Composite&quot;);
   const body = [ fixed(&quot;postBase&quot;, POST_BASE) ];
   if (pulp) body.push(fixed(&quot;postPulp&quot;, POST_PULP));
-  if (gic){ body.push(fixed(&quot;postGic&quot;, POST_GIC)); body.push(branch(row(&quot;GIC follow-up&quot;, chips(&quot;gicOpts&quot;, GIC_OPTS, true), &quot;pick any&quot;))); }
+  if (gic) body.push(fixed(&quot;postGic&quot;, POST_GIC));
   if (comp) body.push(fixed(&quot;postComp&quot;, POST_COMP));
   body.push(row(&quot;Other advice&quot;, textArea(&quot;postExtra&quot;, &quot;Any other advice given&quot;)));
   return section(&quot;post&quot;, &quot;Post-op discussion&quot;, body);
@@ -473,7 +474,7 @@ function buildNote(){
   if (one(&quot;mh&quot;)) a.push(&quot;MH checked: &quot; + one(&quot;mh&quot;));
   if (S.riskLine){
     const r = many(&quot;risks&quot;, RISKS);
-    a.push(sent(ft(&quot;riskLine&quot;, RISK_TEXT)) + (r.length ? &quot; Also discussed case specific risk(s) of: &quot; + andList(r.map(x =&gt; x.charAt(0).toLowerCase() + x.slice(1))) + &quot;.&quot; : &quot;&quot;));
+    a.push(sent(ft(&quot;riskLine&quot;, RISK_TEXT)) + (r.length ? &quot; Also discussed case specific risk(s) of: &quot; + andList(r.map(x =&gt; /^[A-Z][a-z]/.test(x) ? x.charAt(0).toLowerCase() + x.slice(1) : x)) + &quot;.&quot; : &quot;&quot;));
   }
   if (S.consent) a.push(sent(ft(&quot;consent&quot;, CONSENT_TEXT)));
   if (a.length &gt; 1) out.push(a.join(&quot;\n&quot;));
@@ -527,7 +528,7 @@ function buildNote(){
         const g = S[k(&quot;gc&quot;)];
         const type = g === &quot;Standard&quot; || g === &quot;Wide&quot; ? lab(k(&quot;gc&quot;), g).toLowerCase() : one(k(&quot;gc&quot;));
         ms = &quot;Greater Curve &quot; + [type, S[k(&quot;thin&quot;)] ? &quot;ultra thin&quot; : &quot;&quot;, S[k(&quot;ss&quot;)] ? &quot;stainless steel&quot; : &quot;brass&quot;].filter(Boolean).join(&quot; &quot;) + &quot; band&quot;;
-        if (S[k(&quot;cod&quot;)]) ms += &quot;, contact opening drilled&quot;;
+        if (S[k(&quot;cod&quot;)]) ms += &quot;, contact opening&quot;;
       } else ms = one(k(&quot;mat&quot;));
       if (ms &amp;&amp; S[k(&quot;wedge&quot;)] &amp;&amp; mat !== &quot;No matrix band required&quot;) ms += &quot;, wedge placed&quot;;
       if (ms) lines.push(&quot;Matrix system: &quot; + ms + &quot;.&quot;);
@@ -538,7 +539,7 @@ function buildNote(){
       if (S[k(&quot;proto&quot;)]) lines.push(sent(ft(k(&quot;proto&quot;), PROTOCOL)));
     }
     else if (m === &quot;GIC&quot;) lines.push(&quot;GIC placed, vaseline applied.&quot;);
-    else if (m === &quot;Amalgam&quot;) lines.push(&quot;Amalgam placed, condensed and burnished.&quot;);
+    else if (m === &quot;Amalgam&quot;) lines.push(S[k(&quot;amal&quot;)] ? sent(ft(k(&quot;amal&quot;), AMALGAM_TEXT)) : &quot;Amalgam placed.&quot;);
     else if (m === &quot;RMGIC&quot;) lines.push(&quot;RMGIC placed and cured.&quot;);
     else if (m === &quot;Other&quot; &amp;&amp; one(k(&quot;matl&quot;))) lines.push(sent(one(k(&quot;matl&quot;)) + &quot; restoration placed&quot;));
     const occ = S[k(&quot;occ&quot;)];
@@ -556,7 +557,6 @@ function buildNote(){
   if (S.postBase) p.push(sent(ft(&quot;postBase&quot;, POST_BASE)));
   if (pulp &amp;&amp; S.postPulp) p.push(sent(ft(&quot;postPulp&quot;, POST_PULP)));
   if (gic &amp;&amp; S.postGic) p.push(sent(ft(&quot;postGic&quot;, POST_GIC)));
-  if (gic) many(&quot;gicOpts&quot;, GIC_OPTS).forEach(o =&gt; p.push(sent(o)));
   if (comp &amp;&amp; S.postComp) p.push(sent(ft(&quot;postComp&quot;, POST_COMP)));
   if ((S.postExtra || &quot;&quot;).trim()) p.push(sent(S.postExtra));
   if (p.length &gt; 1) out.push(p.join(&quot;\n&quot;));
@@ -786,14 +786,14 @@ loadSettings();
 const CO_LIST = [&quot;Nil&quot;,&quot;Other&quot;];
 const REASONS = [&quot;Unrestorable caries&quot;,&quot;Periodontal disease&quot;,&quot;Fractured tooth&quot;,&quot;Failed root canal treatment&quot;,&quot;Pericoronitis&quot;,&quot;Orthodontic&quot;,&quot;Patient preference&quot;,&quot;Other&quot;];
 const ALTS = [&quot;No treatment&quot;,&quot;Restoration&quot;,&quot;Root canal treatment&quot;,&quot;Referral to specialist&quot;,&quot;Monitor&quot;,&quot;Other&quot;];
-const GAP = [&quot;Nil (leave gap)&quot;,&quot;Implant&quot;,&quot;Bridge&quot;,&quot;Denture&quot;,&quot;Orthodontics&quot;,&quot;Discuss next appointment&quot;,&quot;Add to denture today&quot;,&quot;Other&quot;];
+const GAP = [&quot;Nil (leave gap)&quot;,&quot;Implant&quot;,&quot;Bridge&quot;,&quot;Denture&quot;,&quot;Orthodontics&quot;,&quot;Denture addition&quot;,&quot;Discuss next appointment&quot;,&quot;Other&quot;];
 const RISK_TEXT = &quot;Risks given: pain, bruising, swelling, bleeding, dry socket, infection, damage to adjacent teeth, fractured tooth needing referral.&quot;;
-const SPEC_RISKS = [&quot;Risk of MRONJ&quot;,&quot;Oro-antral communication&quot;,&quot;Altered sensation (IAN/lingual nerve)&quot;,&quot;Retained root fragment&quot;,&quot;Damage to adjacent restoration&quot;,&quot;Other&quot;];
+const SPEC_RISKS = [&quot;Risk of MRONJ&quot;,&quot;OAC&quot;,&quot;Altered sensation or damage (IAN/lingual nerve)&quot;,&quot;Retained root fragment&quot;,&quot;Damage to adjacent restoration&quot;,&quot;Other&quot;];
 const MRONJ_TEXT = &quot;risk for MRONJ based on length of time this has been taken for, and the reason for use. Discussed with the patient the relevance of this, and a plan for follow up based on risk level. Advised that many dentists refer these extractions to a hospital setting, however their initial management does not differ from general practice. Explained that this option is still available to them if they wish, but usually we would review and refer if issues arise with healing and signs of MRONJ are present.&quot;;
 const CONSENT_TEXT = &quot;Verbal consent given to proceed.&quot;;
 
 const MH_LIST = [&quot;No changes&quot;,&quot;Changes updated&quot;,&quot;Other&quot;];
-const MEDS = [&quot;No blood thinners, bisphosphonates or other medication to note&quot;,&quot;Blood thinners&quot;,&quot;Drugs associated with MRONJ&quot;,&quot;Previous head and neck radiotherapy - risk of ORN&quot;,&quot;Other&quot;];
+const MEDS = [&quot;No significant medical history of note&quot;,&quot;Blood thinners&quot;,&quot;Higher risk of MRONJ&quot;,&quot;Previous head and neck radiotherapy - risk of ORN&quot;,&quot;Other&quot;];
 const SMOKER = [&quot;Non-smoker&quot;,&quot;Smoker&quot;];
 
 const LA_TYPES = [&quot;Nil&quot;,&quot;Infiltration&quot;,&quot;IANB&quot;,&quot;IANB + infiltration&quot;,&quot;Other&quot;];
@@ -815,7 +815,7 @@ const V_TEXT = &quot;Advised patient that sutures will resorb in 4-5 weeks with 
 const HAEM_TEXT = &quot;Haemostasis of socket in chair.&quot;;
 
 const COOP = [&quot;Good&quot;,&quot;Moderate&quot;,&quot;Poor&quot;,&quot;Other&quot;];
-const POI_TEXT = &quot;Post op instructions given: no rinsing for 24 hours, swallow saliva, bite on pack if bleeding, painkillers, avoid hot drinks, salt water rinses from 24 hours onwards, to contact if persistent issues - sheet given with information with bite packs. Explained that some swelling and bruising is normal and painkillers (paracetamol and ibuprofen if able to take) can be taken before the numbness wears off to manage pain.&quot;;
+const POI_TEXT = &quot;Post-op care explained and written information sheet provided along with spare bite packs. Advised to avoid rinsing for the first 24 hours and to swallow rather than spit, to bite firmly on a pack if any bleeding, to avoid hot drinks today and to start warm salt water rinses from tomorrow. Patient to get in touch if any problems persist. Advised that swelling and bruising are expected, and that pain relief (paracetamol, plus ibuprofen if suitable) is best started before the numbness wears off.&quot;;
 const SINUS_TEXT = &quot;Sinus instructions advised.&quot;;
 const SMOKE_TEXT = &quot;Advised patient not to smoke, and of the increased risks of dry socket and impaired healing with smoking.&quot;;
 
@@ -1043,7 +1043,7 @@ function extSection(){
 }
 function postSection(){
   const body = [ row(&quot;Co-operation&quot;, chips(&quot;coop&quot;, COOP)), fixed(&quot;poi&quot;, POI_TEXT) ];
-  if (has(&quot;spec&quot;, &quot;Oro-antral communication&quot;)) body.push(fixed(&quot;sinus&quot;, SINUS_TEXT));
+  if (has(&quot;spec&quot;, &quot;OAC&quot;)) body.push(fixed(&quot;sinus&quot;, SINUS_TEXT));
   if (S.smoker === &quot;Smoker&quot;) body.push(fixed(&quot;smoke&quot;, SMOKE_TEXT));
   body.push(row(&quot;Other advice&quot;, textArea(&quot;postExtra&quot;, &quot;Any other advice given&quot;)));
   return section(&quot;post&quot;, &quot;Post-op discussion&quot;, body);
@@ -1068,7 +1068,7 @@ function laLine(kb, prefix){
   const parts = [agent, volStr].filter(Boolean);
   return prefix + (parts.length ? &quot;: &quot; + parts.join(&quot;, &quot;) : &quot;&quot;);
 }
-const lc = x =&gt; x.charAt(0).toLowerCase() + x.slice(1);
+const lc = x =&gt; x &amp;&amp; /^[A-Z][a-z]/.test(x) ? x.charAt(0).toLowerCase() + x.slice(1) : x;
 function buildNote(){
   const out = [];
   const a = [&quot;** Extraction Appointment **&quot;];
@@ -1145,7 +1145,7 @@ function buildNote(){
   const p = [&quot;** Post-op Discussion **&quot;];
   if (one(&quot;coop&quot;)) p.push(&quot;Co-operation: &quot; + one(&quot;coop&quot;) + &quot;.&quot;);
   if (S.poi) p.push(sent(ft(&quot;poi&quot;, POI_TEXT)));
-  if (has(&quot;spec&quot;, &quot;Oro-antral communication&quot;) &amp;&amp; S.sinus) p.push(sent(ft(&quot;sinus&quot;, SINUS_TEXT)));
+  if (has(&quot;spec&quot;, &quot;OAC&quot;) &amp;&amp; S.sinus) p.push(sent(ft(&quot;sinus&quot;, SINUS_TEXT)));
   if (S.smoker === &quot;Smoker&quot; &amp;&amp; S.smoke) p.push(sent(ft(&quot;smoke&quot;, SMOKE_TEXT)));
   if ((S.postExtra || &quot;&quot;).trim()) p.push(sent(S.postExtra));
   if (p.length &gt; 1) out.push(p.join(&quot;\n&quot;));
