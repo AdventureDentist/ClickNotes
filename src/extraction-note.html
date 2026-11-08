@@ -207,6 +207,14 @@ const HAEM_TEXT = "Haemostasis of socket in chair.";
 const COOP = ["Good","Moderate","Poor","Other"];
 const POI_TEXT = "Post-op care explained and written information sheet provided along with spare bite packs. Advised to avoid rinsing for the first 24 hours and to swallow rather than spit, to bite firmly on a pack if any bleeding, to avoid hot drinks today and to start warm salt water rinses from tomorrow. Patient to get in touch if any problems persist. Advised that swelling and bruising are expected, and that pain relief (paracetamol, plus ibuprofen if suitable) is best started before the numbness wears off.";
 const SINUS_TEXT = "Sinus instructions advised.";
+const IMM_ARCH = ["Upper","Lower","Upper and lower"];
+const IMM_FIT_TEXT = "Fitted following the extractions and checked for fit, retention, stability and occlusion.";
+const IMM_ADJ = ["Nil required","Pressure areas eased","Flange reduced","Occlusal adjustment","Clasps adjusted","Other"];
+const IMM_HAPPY = ["Patient happy with fit and appearance - shown in mirror","Patient happy with fit and appearance","Other"];
+const IMM_REVIEW = ["Next day","2 to 3 days","1 week","Other"];
+const IMM_POI_TEXT = "Advised to leave the denture in for the first 24 hours, as it protects the sockets and helps control bleeding and swelling.";
+const IMM_CLEAN_TEXT = "After the first 24 hours, advised to take the denture out after meals to clean it and gently rinse, and to leave it out overnight where possible to let the gums rest.";
+const IMM_SHRINK_TEXT = "Explained that the gums shrink as the sockets heal, so the denture is likely to loosen and need a reline or replacement within 3 to 6 months.";
 const SMOKE_TEXT = "Advised patient not to smoke, and of the increased risks of dry socket and impaired healing with smoking.";
 
 /* ---------- state ---------- */
@@ -229,6 +237,7 @@ function copyProc(from, to){
 function fresh(){
   S = { lbl: {}, txt: {}, clin: CLINICIAN, da: defaultDA(), co: "Nil", mh: "No changes", riskLine: true, consent: true,
         mronjTxt: true, poi: true, sinus: true, smoke: true,
+        immFit: true, immPoi: true, immClean: true, immShrink: true,
         "inf.cart": "1.8ml", "ianb.cart": "1.8ml", "oth.cart": "1.8ml",
         "inf.agent": AGENTS[0], "ianb.agent": AGENTS[0], "oth.agent": AGENTS[0] };
   procDefaults(EXT);
@@ -429,10 +438,22 @@ function extSection(){
       body.push(el("div", { class: "per-tooth" }, el("h3", null, el("span", { class: "tag" }, String(n))), ...procRows(kp)));
     });
   } else body.push(...procRows(EXT));
+  body.push(row("Immediate denture", tick("imm", "Immediate denture fitted today")));
   return section("ext", "Extraction", body, el("span", { class: "rest-h" }, tag));
+}
+function immSection(){
+  if (!S.imm) return null;
+  return section("imm", "Immediate denture", [
+    row("Arch", chips("immArch", IMM_ARCH)),
+    fixed("immFit", IMM_FIT_TEXT),
+    row("Adjustments", chips("immAdj", IMM_ADJ, true), "pick any"),
+    row("Patient", chips("immHappy", IMM_HAPPY)),
+    row("Review", chips("immRev", IMM_REVIEW))
+  ]);
 }
 function postSection(){
   const body = [ row("Co-operation", chips("coop", COOP)), fixed("poi", POI_TEXT) ];
+  if (S.imm) body.push(fixed("immPoi", IMM_POI_TEXT), fixed("immClean", IMM_CLEAN_TEXT), fixed("immShrink", IMM_SHRINK_TEXT));
   if (has("spec", "OAC")) body.push(fixed("sinus", SINUS_TEXT));
   if (S.smoker === "Smoker") body.push(fixed("smoke", SMOKE_TEXT));
   body.push(row("Other advice", textArea("postExtra", "Any other advice given")));
@@ -532,9 +553,21 @@ function buildNote(){
     if (teeth.length || S[EXT + ".method"]) out.push(["** Extraction" + (teeth.length ? ": " + teeth.join(", ") : "") + " **", ...lines].join("\n"));
   }
 
+  if (S.imm){
+    const d = ["** Immediate Denture **"];
+    const what = !S.immArch ? "Immediate denture" : one("immArch") + (S.immArch === "Upper and lower" ? " immediate dentures" : " immediate denture");
+    d.push(S.immFit ? sent(what + " " + lc(ft("immFit", IMM_FIT_TEXT))) : what + ".");
+    const adj = many("immAdj", IMM_ADJ);
+    if (adj.length) d.push("Adjustments: " + andList(adj.map(lc)) + ".");
+    if (one("immHappy")) d.push(sent(one("immHappy")));
+    if (one("immRev")) d.push("Review: " + lc(one("immRev")) + ".");
+    if (d.length > 1) out.push(d.join("\n"));
+  }
+
   const p = ["** Post-op Discussion **"];
   if (one("coop")) p.push("Co-operation: " + one("coop") + ".");
   if (S.poi) p.push(sent(ft("poi", POI_TEXT)));
+  if (S.imm) [["immPoi", IMM_POI_TEXT], ["immClean", IMM_CLEAN_TEXT], ["immShrink", IMM_SHRINK_TEXT]].forEach(([k, d]) => { if (S[k]) p.push(sent(ft(k, d))); });
   if (has("spec", "OAC") && S.sinus) p.push(sent(ft("sinus", SINUS_TEXT)));
   if (S.smoker === "Smoker" && S.smoke) p.push(sent(ft("smoke", SMOKE_TEXT)));
   if ((S.postExtra || "").trim()) p.push(sent(S.postExtra));
@@ -549,7 +582,7 @@ function buildNote(){
 function renderNote(){ $("note").textContent = buildNote() || "Your note builds here as you tap."; }
 function render(){
   const f = $("form");
-  f.replaceChildren(apptSection(), mhSection(), laSection(), extSection(), postSection(), endSection());
+  f.replaceChildren(...[apptSection(), mhSection(), laSection(), extSection(), immSection(), postSection(), endSection()].filter(Boolean));
   renderNote();
   if (pendingFocus){ const i = f.querySelector('[data-key="' + pendingFocus + '"]'); if (i) i.focus(); pendingFocus = null; }
 }

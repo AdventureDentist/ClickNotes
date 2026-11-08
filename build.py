@@ -20,6 +20,7 @@ TEMPLATES = {
     "prep": "indirect-prep-note.html",
     "fit": "indirect-fit-note.html",
     "endo": "endo-note.html",
+    "denture": "denture-note.html",
 }
 EDITOR_BLOCK = re.compile(
     r"^[ \t]*(?:/\*|<!--) EDITOR-ONLY START.*?EDITOR-ONLY END (?:\*/|-->)\n", re.S | re.M)

@@ -404,17 +404,17 @@ function endNotes(out){
 function fixedLine(k, def){ return S[k] ? sent(ft(k, def)) : ""; }
 function renderNote(){ $("note").textContent = buildNote() || "Your note builds here as you tap."; }
 const TEMP_ISSUES = ["Nil","Came off","Sensitive","High","No temp","Other"];
-const LAB_TEXT = "Lab work back and checked on models.";
+const LAB_TEXT = "Lab work returned and checked on the models.";
 const CONSENT_TEXT = "Verbal consent given to proceed.";
 const TEMP_REMOVED = ["Flicked off","Cut off","Already off","Ultrasonic","No temp","Other"];
 const ADJUST = ["Nil","Occlusal adjustment","Interproximal adjustment","Other"];
-const HAPPY = ["Patient happy to cement today - shown in mirror","Patient happy to cement today","Other"];
+const HAPPY = ["Patient shown in mirror and happy to proceed with cementation","Patient happy to proceed with cementation","Other"];
 const PROTOCOL = ["Nil required","Sandblasted with 27µm aluminium oxide","Etched with HF acid","Etched with phosphoric acid","Cleaned with Ivoclean"];
 const CEMENTS = ["Fuji Plus","RelyX","Panavia","Variolink Esthetic","Other"];
 const SEBOND_TEXT = "SE Bond scrubbed into dentine (uncured).";
-const EXCESS_TEXT = "Excess cement cleared, contact points flossed, margins cleaned.";
+const EXCESS_TEXT = "Excess cement removed, contacts flossed and margins cleaned.";
 const OCC_ADJ = ["Nil","Minor adjustments required","Other"];
-const CLEAN_TEXT = "Advised to keep clean, flossing / TePe to prevent calculus build up, plaque, food trapping and secondary decay.";
+const CLEAN_TEXT = "Advised to clean around the restoration daily with floss or interdental brushes to prevent plaque and calculus build-up, food trapping and secondary decay.";
 
 function fresh(){
   S = Object.assign({ lbl: {}, txt: {}, clin: CLINICIAN, da: defaultDA(), co: "Nil", mh: "No changes", tissue: "Nil", labTxt: true, consent: true,
@@ -461,7 +461,7 @@ function buildNote(){
   const p = ["** Pre-cementation **"];
   if (one("tremoved")) p.push(S.tremoved === "No temp" ? "No temp in place." : "Temp removed: " + lc(one("tremoved")) + ".");
   const adj = many("adj", ADJUST);
-  if (adj.length) p.push("Prep cleaned. Restoration tried in, adjustments needed: " + andList(adj.map(lc)) + ".");
+  if (adj.length) p.push("Preparation cleaned and restoration tried in. Adjustments: " + andList(adj.map(lc)) + ".");
   if (one("happy")) p.push(sent(one("happy")));
   const pr = PROTOCOL.filter(o => (S.proto || []).includes(o));
   if (pr.length) p.push("Restoration treatment protocol: " + andList(pr.map(lc)) + ".");

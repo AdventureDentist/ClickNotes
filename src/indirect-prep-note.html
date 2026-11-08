@@ -403,25 +403,25 @@ function endNotes(out){
 }
 function fixedLine(k, def){ return S[k] ? sent(ft(k, def)) : ""; }
 function renderNote(){ $("note").textContent = buildNote() || "Your note builds here as you tap."; }
-const REPL_TEXT = "Patient is aware that we do not know what we may find once the restoration is dismantled, there may be significant secondary decay, and the tooth may require further treatment at additional cost.";
+const REPL_TEXT = "Explained that the condition of the tooth is unknown until the old restoration is removed. There may be significant secondary decay, and further treatment at extra cost may be needed.";
 const RAD_TEXT = "RAD present.";
-const PULP = ["Risk of tooth devitalisation and need for RCT in the future discussed","Tooth has been previously root treated"];
-const UPKEEP_TEXT = "Patient aware of need for upkeep of restoration – interdental cleaning and regular recall to prevent secondary decay or failure - explained that this is similar to buying a new car, regular servicing and maintenance in the form of hygiene visits and self-care is required to prolong the life of restorative treatment.";
+const PULP = ["Discussed risk of the tooth losing vitality and needing RCT in future","Tooth has been previously root treated"];
+const UPKEEP_TEXT = "Explained that the restoration needs ongoing care to last, much like regular servicing for a car: interdental cleaning, hygiene visits and regular recalls to reduce the risk of secondary decay or failure.";
 const CONSENT_TEXT = "Verbal consent given to proceed.";
 const BITE = ["conform to","reorganise"];
 const SCHEME = ["Canine guidance","Group function"];
-const PREP_TEXT = "Tooth prepared and margins refined for planned material.";
+const PREP_TEXT = "Tooth prepared for the planned material and margins refined.";
 const CLEAR = ["adequate clearance for planned material","limited space, as much clearance achieved as possible","Other"];
-const MARGIN_TEXT = "Discussed with patient position of margins and aesthetics of final restoration.";
+const MARGIN_TEXT = "Margin position and final appearance discussed with the patient.";
 const SHADES = ["A1","A2","A3","A3.5","B1","B2","Other"];
 const RETRACT = ["Retraction cord used","Retraction cord not indicated","Retraction paste used","Other"];
-const IMPRESS = ["Digital scan taken","Light & heavy bodied silicone with opposing alginate taken","Putty wash impressions 2 stage","Other"];
+const IMPRESS = ["Digital scan taken","Light and heavy body silicone impression, opposing alginate","Two-stage putty wash impression","Other"];
 const TEMP = ["Maxitemp","Shrink fit","Liquid dam","No temp","Other"];
 const TEMP_CEM = ["Tempbond","Poly-F","Shrink fit","Other"];
-const HYG_TEXT = "Temps made hygienic and cleansable, patient aware of importance of hygiene in this area with TePe brushes (not floss), to allow healthy tissues for the fit appointment.";
-const WARN_TEXT = "Patient warned that temp may come off, to let us know if it does, patient aware not to floss around temp.";
+const HYG_TEXT = "Temporary shaped so it can be kept clean. Patient shown how to clean around it with interdental brushes (not floss) to keep the gums healthy for the fit appointment.";
+const WARN_TEXT = "Warned the temporary may come off and to let us know if it does. Advised not to floss around it.";
 const OCC_TEXT = "Occlusion checked and adjusted.";
-const TRYIN_TEXT = "Patient aware that next visit is a try-in, with cementation if happy.";
+const TRYIN_TEXT = "Next visit explained: try-in, then cementation if the patient is happy.";
 
 function fresh(){
   S = Object.assign({ lbl: {}, txt: {}, clin: CLINICIAN, da: defaultDA(), co: "Nil", mh: "No changes", replTxt: true, rad: true, upkeep: true, consent: true,
@@ -481,7 +481,7 @@ function buildNote(){
   const la = laNote(); if (la) out.push(la);
 
   const p = ["** Preparation **"];
-  p.push("Occlusion checked with articulating paper prior to procedure." + (one("bite") ? " New restorations are to " + one("bite") + " the bite." : ""));
+  p.push("Pre-op occlusion checked with articulating paper." + (one("bite") ? " New restorations will " + one("bite") + " the existing bite." : ""));
   if (S.schemeOn && one("scheme")) p.push("Occlusal scheme: " + one("scheme") + ".");
   if (S.shim === "Yes"){
     p.push("Shimstock used.");

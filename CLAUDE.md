@@ -24,6 +24,8 @@ Dental note builder used chairside by a general dentist in Auckland, New Zealand
 - LA: Articaine 4% 1:100,000 first and preselected; 1.8ml cartridges.
 - C/O Nil; MH checked No changes.
 - Filling: one tooth per restoration with per-tooth surfaces; moisture control cotton wool rolls + HVS; liner not required; Greater Curve standard band with stainless steel and contact opening ticked, ultra thin and wedge unticked; composite brand 3M Filtek (Empress Direct as alternative) plus the flowable base and snowplough protocol line; amalgam adds a ticked "condensed and burnished" line; no GIC follow-up question.
-- Extraction: multiple teeth with an optional per-tooth split.
+- Extraction: multiple teeth with an optional per-tooth split. "Immediate denture fitted today" tick adds an Immediate Denture section and extra post-op lines.
 - Indirect: multiple teeth with an optional per-tooth restoration and material; occlusal scheme hidden unless ticked; fit protocol as tick boxes.
 - Endo: one template covering first visit or continuing treatment, with an interim dressing tick box; ProTaper Next default with per-system final shaping sizes; single cone and AH Plus defaults.
+- Dentures: arch, type per arch, multi-select stages (3D scan, primary/secondary impressions, bite, try-in, fit, review, addition or repair, reline), lab picker and next appointment. Expectations as tick sentences (prosthesis sentence, combined "also discussed", lower/clasp/immediate lines when relevant); "Expectations of dentures discussed last time" ticks itself unless a stage is 3D scan, primary impressions or fit.
+- Wording was reworded away from Kiroku's template; keep new wording original rather than copying other note systems.
