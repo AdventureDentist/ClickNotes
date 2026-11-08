@@ -122,6 +122,17 @@ aside{background:var(--surface);border-left:1px solid var(--line);padding:22px 2
 .per-tooth{margin:14px 0 4px;padding:6px 0 2px 14px;border-left:3px solid var(--enamel-edge)}
 .per-tooth h3{margin:0 0 4px;font-size:1rem}
 @media (prefers-reduced-motion: reduce){.toast{transition:none}}
+/* follow-ups still to fill */
+.row.need > .lab{color:#9A5B00}
+.row.need > .lab::after{content:"needed";display:inline-block;margin-left:6px;padding:0 6px;border-radius:999px;background:#FBE7C6;color:#7A4700;font-size:.72rem;font-weight:600;vertical-align:1px}
+.need-box{border:1px solid #E7C38A;background:#FDF4E4;color:#5E3B00;border-radius:9px;padding:8px 11px;font-size:.84rem;line-height:1.5}
+.need-box b{font-weight:700}
+.need-box button{background:none;border:0;padding:0;color:inherit;text-decoration:underline;text-underline-offset:2px;font-size:inherit}
+.row.flash{animation:needflash 1.2s ease-out}
+@keyframes needflash{0%{background:#FBE7C6}100%{background:transparent}}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .row.need > .lab{color:#F2B25C}:root:not([data-theme="light"]) .row.need > .lab::after{background:#4A3410;color:#F6CF8F}:root:not([data-theme="light"]) .need-box{background:#2E2410;border-color:#6B5221;color:#F6DDB0}}
+:root[data-theme="dark"] .row.need > .lab{color:#F2B25C}:root[data-theme="dark"] .row.need > .lab::after{background:#4A3410;color:#F6CF8F}:root[data-theme="dark"] .need-box{background:#2E2410;border-color:#6B5221;color:#F6DDB0}
+@media (prefers-reduced-motion: reduce){.row.flash{animation:none}}
 </style>
 </head>
 <body>
@@ -319,13 +330,48 @@ function chips(k, opts, multi){
 }
 function textInput(k, ph, cls){
   return el("input", { type: "text", class: cls || "txt", placeholder: ph || "", value: S[k] || "", "data-key": k, autocomplete: "off",
-    oninput(e){ S[k] = e.target.value; renderNote(); } });
+    oninput(e){ const was = filled(k); S[k] = e.target.value;
+      if (REQ_KEYS.has(k) && was !== filled(k)){ pendingFocus = k; render(); const n = document.querySelector('[data-key="' + k + '"]'); if (n) n.setSelectionRange(n.value.length, n.value.length); }
+      else renderNote(); } });
 }
 function textArea(k, ph){
   const t = el("textarea", { class: "txt", placeholder: ph || "", "data-key": k, oninput(e){ S[k] = e.target.value; renderNote(); } });
   t.value = S[k] || ""; return t;
 }
 function row(label, ctrl, hint){ return el("div", { class: "row" }, el("div", { class: "lab" }, label, hint ? el("small", null, hint) : null), el("div", null, ctrl)); }
+/* ---------- follow-ups still to fill: req() rows are flagged while empty, and Copy asks once first ---------- */
+let NEED = [], REQ_KEYS = new Set(), warnedAt = 0;
+function filled(k){
+  const v = S[k], oth = () => !!(S[k + "~o"] || "").trim();
+  if (Array.isArray(v)) return v.some(x => x !== "Other") || (v.includes("Other") && oth());
+  if (v === "Other") return oth();
+  return v != null && v !== false && String(v).trim() !== "";
+}
+function req(label, k, ctrl, hint, name){
+  const r = row(label, ctrl, hint);
+  REQ_KEYS.add(k);
+  if (!filled(k)){ r.classList.add("need"); NEED.push({ name: name || label, el: r }); }
+  return r;
+}
+function showNeed(){
+  let box = $("needBox");
+  if (!box){ box = el("div", { id: "needBox", class: "need-box", role: "status" }); $("note").parentNode.insertBefore(box, $("note")); }
+  box.hidden = !NEED.length;
+  box.replaceChildren(...(NEED.length ? [el("b", null, "Still to fill: ")] : []), ...NEED.flatMap((n, i) => [i ? ", " : "",
+    el("button", { type: "button", onclick(){ goNeed(n); } }, n.name)]));
+}
+function goNeed(n){
+  n.el.scrollIntoView({ behavior: "smooth", block: "center" });
+  n.el.classList.remove("flash"); void n.el.offsetWidth; n.el.classList.add("flash");
+  const f = n.el.querySelector("button, input, textarea"); if (f) f.focus({ preventScroll: true });
+}
+function needCheck(){
+  if (!NEED.length || Date.now() - warnedAt < 8000){ warnedAt = 0; return true; }
+  warnedAt = Date.now();
+  toast("Still to fill: " + NEED.map(n => n.name).join(", ") + ". Press Copy again to copy anyway.", 5000);
+  goNeed(NEED[0]);
+  return false;
+}
 function branch(...rows){ return el("div", { class: "branch" }, ...rows); }
 function fixed(k, text){
   const cb = el("input", { type: "checkbox", id: "cb-" + k, checked: S[k] ? "checked" : false, "aria-label": "Include in note", onchange(e){ S[k] = e.target.checked; render(); } });
@@ -396,12 +442,12 @@ function archLc(){ return S.arch ? one("arch").toLowerCase() : ""; }
 function apptSection(){
   syncPrev();
   const body = [ ...staffRows(), row("MH", chips("mh", MH_LIST)),
-    row("Arch", chips("arch", ARCHES)) ];
+    req("Arch", "arch", chips("arch", ARCHES)) ];
   const arches = archList();
-  arches.forEach(a => body.push(row(arches.length > 1 ? a + " denture" : "Denture type", chips(typeKey(a), D_TYPES))));
+  arches.forEach(a => body.push(req(arches.length > 1 ? a + " denture" : "Denture type", typeKey(a), chips(typeKey(a), D_TYPES), null, a + " denture type")));
   if (arches.length) body.push(row("Immediate", tick("imm", "Immediate denture (teeth still to be extracted)")));
-  if (isPartial()) body.push(row("Teeth to replace", teethMulti("teeth"), "pick any"));
-  body.push(row("Stage", chips("stages", STAGES, true), "pick any"));
+  if (isPartial()) body.push(req("Teeth to replace", "teeth", teethMulti("teeth"), "pick any"));
+  body.push(req("Stage", "stages", chips("stages", STAGES, true), "pick any"));
   body.push(...expectRows());
   body.push(fixed("consent", CONSENT_TEXT));
   return section("appt", "Denture appointment", body);
@@ -432,7 +478,7 @@ function biteSection(){
 }
 function trySection(){
   const body = [ row("Checked", chips("trychk", TRY_CHECKS, true), "pick any"), row("Patient", chips("tryhappy", TRY_HAPPY)) ];
-  if (S.tryhappy === "Changes requested") body.push(branch(row("Changes", textInput("trychg", "e.g. lighter shade, upper midline to the left"))));
+  if (S.tryhappy === "Changes requested") body.push(branch(req("Changes", "trychg", textInput("trychg", "e.g. lighter shade, upper midline to the left"), null, "Changes requested")));
   body.push(row("Next step", chips("trynext", TRY_NEXT)));
   return section("try", "Try-in", body);
 }
@@ -455,12 +501,12 @@ function reviewSection(){
 }
 function repairSection(){
   const body = [ row("Work", chips("rep", REPAIRS, true), "pick any") ];
-  if (has("rep", "Tooth addition") || has("rep", "Clasp addition")) body.push(branch(row("Teeth", teethMulti("repteeth"), "pick any")));
+  if (has("rep", "Tooth addition") || has("rep", "Clasp addition")) body.push(branch(req("Teeth", "repteeth", teethMulti("repteeth"), "pick any", "Teeth for addition")));
   body.push(fixed("repimp", REPAIR_IMP_TEXT));
   return section("repair", "Addition or repair", body);
 }
 function relineSection(){
-  const body = [ row("Type", chips("rel", RELINES)) ];
+  const body = [ req("Type", "rel", chips("rel", RELINES), null, "Reline type") ];
   if (S.rel === "Lab reline" || S.rel === "Lab rebase") body.push(branch(fixed("relimp", RELINE_IMP_TEXT)));
   return section("reline", "Reline", body);
 }
@@ -578,6 +624,7 @@ function buildNote(){
   return out.join("\n\n");
 }
 function render(){
+  NEED = []; REQ_KEYS = new Set();
   const f = $("form");
   const secs = [apptSection()];
   if (stageOn("3D scan")) secs.push(scanSection());
@@ -591,13 +638,14 @@ function render(){
   if (stageOn("Reline")) secs.push(relineSection());
   secs.push(labSection(), endSection());
   f.replaceChildren(...secs);
-  renderNote();
+  renderNote(); showNeed();
   if (pendingFocus){ const el2 = f.querySelector('[data-key="' + pendingFocus + '"]'); if (el2) el2.focus(); pendingFocus = null; }
 }
 /* ---------- actions ---------- */
 let tt;
-function toast(msg){ const t = $("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(tt); tt = setTimeout(() => t.classList.remove("show"), 1600); }
+function toast(msg, ms){ const t = $("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(tt); tt = setTimeout(() => t.classList.remove("show"), ms || 1600); }
 async function copyNote(){
+  if (!needCheck()) return;
   const txt = buildNote();
   if (!txt){ toast("Nothing to copy yet"); return; }
   let ok = false;

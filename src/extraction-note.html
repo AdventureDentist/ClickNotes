@@ -122,6 +122,17 @@ aside{background:var(--surface);border-left:1px solid var(--line);padding:22px 2
 .per-tooth{margin:14px 0 4px;padding:6px 0 2px 14px;border-left:3px solid var(--enamel-edge)}
 .per-tooth h3{margin:0 0 4px;font-size:1rem}
 @media (prefers-reduced-motion: reduce){.toast{transition:none}}
+/* follow-ups still to fill */
+.row.need > .lab{color:#9A5B00}
+.row.need > .lab::after{content:"needed";display:inline-block;margin-left:6px;padding:0 6px;border-radius:999px;background:#FBE7C6;color:#7A4700;font-size:.72rem;font-weight:600;vertical-align:1px}
+.need-box{border:1px solid #E7C38A;background:#FDF4E4;color:#5E3B00;border-radius:9px;padding:8px 11px;font-size:.84rem;line-height:1.5}
+.need-box b{font-weight:700}
+.need-box button{background:none;border:0;padding:0;color:inherit;text-decoration:underline;text-underline-offset:2px;font-size:inherit}
+.row.flash{animation:needflash 1.2s ease-out}
+@keyframes needflash{0%{background:#FBE7C6}100%{background:transparent}}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .row.need > .lab{color:#F2B25C}:root:not([data-theme="light"]) .row.need > .lab::after{background:#4A3410;color:#F6CF8F}:root:not([data-theme="light"]) .need-box{background:#2E2410;border-color:#6B5221;color:#F6DDB0}}
+:root[data-theme="dark"] .row.need > .lab{color:#F2B25C}:root[data-theme="dark"] .row.need > .lab::after{background:#4A3410;color:#F6CF8F}:root[data-theme="dark"] .need-box{background:#2E2410;border-color:#6B5221;color:#F6DDB0}
+@media (prefers-reduced-motion: reduce){.row.flash{animation:none}}
 </style>
 </head>
 <body>
@@ -296,13 +307,48 @@ function chips(k, opts, multi){
 }
 function textInput(k, ph, cls){
   return el("input", { type: "text", class: cls || "txt", placeholder: ph || "", value: S[k] || "", "data-key": k, autocomplete: "off",
-    oninput(e){ S[k] = e.target.value; renderNote(); } });
+    oninput(e){ const was = filled(k); S[k] = e.target.value;
+      if (REQ_KEYS.has(k) && was !== filled(k)){ pendingFocus = k; render(); const n = document.querySelector('[data-key="' + k + '"]'); if (n) n.setSelectionRange(n.value.length, n.value.length); }
+      else renderNote(); } });
 }
 function textArea(k, ph){
   const t = el("textarea", { class: "txt", placeholder: ph || "", "data-key": k, oninput(e){ S[k] = e.target.value; renderNote(); } });
   t.value = S[k] || ""; return t;
 }
 function row(label, ctrl, hint){ return el("div", { class: "row" }, el("div", { class: "lab" }, label, hint ? el("small", null, hint) : null), el("div", null, ctrl)); }
+/* ---------- follow-ups still to fill: req() rows are flagged while empty, and Copy asks once first ---------- */
+let NEED = [], REQ_KEYS = new Set(), warnedAt = 0;
+function filled(k){
+  const v = S[k], oth = () => !!(S[k + "~o"] || "").trim();
+  if (Array.isArray(v)) return v.some(x => x !== "Other") || (v.includes("Other") && oth());
+  if (v === "Other") return oth();
+  return v != null && v !== false && String(v).trim() !== "";
+}
+function req(label, k, ctrl, hint, name){
+  const r = row(label, ctrl, hint);
+  REQ_KEYS.add(k);
+  if (!filled(k)){ r.classList.add("need"); NEED.push({ name: name || label, el: r }); }
+  return r;
+}
+function showNeed(){
+  let box = $("needBox");
+  if (!box){ box = el("div", { id: "needBox", class: "need-box", role: "status" }); $("note").parentNode.insertBefore(box, $("note")); }
+  box.hidden = !NEED.length;
+  box.replaceChildren(...(NEED.length ? [el("b", null, "Still to fill: ")] : []), ...NEED.flatMap((n, i) => [i ? ", " : "",
+    el("button", { type: "button", onclick(){ goNeed(n); } }, n.name)]));
+}
+function goNeed(n){
+  n.el.scrollIntoView({ behavior: "smooth", block: "center" });
+  n.el.classList.remove("flash"); void n.el.offsetWidth; n.el.classList.add("flash");
+  const f = n.el.querySelector("button, input, textarea"); if (f) f.focus({ preventScroll: true });
+}
+function needCheck(){
+  if (!NEED.length || Date.now() - warnedAt < 8000){ warnedAt = 0; return true; }
+  warnedAt = Date.now();
+  toast("Still to fill: " + NEED.map(n => n.name).join(", ") + ". Press Copy again to copy anyway.", 5000);
+  goNeed(NEED[0]);
+  return false;
+}
 function branch(...rows){ return el("div", { class: "branch" }, ...rows); }
 function fixed(k, text){
   const cb = el("input", { type: "checkbox", id: "cb-" + k, checked: S[k] ? "checked" : false, "aria-label": "Include in note", onchange(e){ S[k] = e.target.checked; render(); } });
@@ -341,7 +387,8 @@ function teethPicker(k){
       set.size ? el("button", { type: "button", class: "link", onclick(){ S[k] = []; render(); } }, "Clear tooth") : null));
 }
 function laBlock(kb){
-  return [ row("Anaesthetic", chips(kb + ".agent", AGENTS)), row("Volume", chips(kb + ".vol", VOLS)), row("Cartridge", chips(kb + ".cart", CARTS)) ];
+  const nm = { inf: "Infiltration", ianb: "IANB", oth: "LA" }[kb] || "LA";
+  return [ req("Anaesthetic", kb + ".agent", chips(kb + ".agent", AGENTS), null, nm + " anaesthetic"), req("Volume", kb + ".vol", chips(kb + ".vol", VOLS), null, nm + " volume"), req("Cartridge", kb + ".cart", chips(kb + ".cart", CARTS), null, nm + " cartridge") ];
 }
 
 /* ---------- sections ---------- */
@@ -358,7 +405,7 @@ function apptSection(){
     fixed("riskLine", RISK_TEXT),
     row("Specific risks", chips("spec", SPEC_RISKS, true), "pick any")
   ];
-  if (has("spec", "Risk of MRONJ")) body.push(branch(row("MRONJ risk", chips("mronj", ["low","high"]), "patient is"), fixed("mronjTxt", MRONJ_TEXT)));
+  if (has("spec", "Risk of MRONJ")) body.push(branch(req("MRONJ risk", "mronj", chips("mronj", ["low","high"]), "patient is"), fixed("mronjTxt", MRONJ_TEXT)));
   body.push(fixed("consent", CONSENT_TEXT));
   return section("appt", "Extraction appointment", body);
 }
@@ -373,11 +420,11 @@ function laSection(){
   const t = S.la;
   const body = [ row("LA", chips("la", LA_TYPES)) ];
   if (t === "Infiltration" || t === "IANB + infiltration")
-    body.push(branch(row("Infiltration site", chips("inf.site", SITES, true), "pick any"), ...laBlock("inf")));
+    body.push(branch(req("Infiltration site", "inf.site", chips("inf.site", SITES, true), "pick any"), ...laBlock("inf")));
   if (t === "IANB" || t === "IANB + infiltration")
-    body.push(branch(row("IANB side", chips("ianb.side", t === "IANB + infiltration" ? ["RHS","LHS","Bilateral"] : ["RHS","LHS"])), ...laBlock("ianb")));
+    body.push(branch(req("IANB side", "ianb.side", chips("ianb.side", t === "IANB + infiltration" ? ["RHS","LHS","Bilateral"] : ["RHS","LHS"])), ...laBlock("ianb")));
   if (t === "Other")
-    body.push(branch(row("Type of administration", textInput("oth.type", "e.g. palatal, intraligamentary")), ...laBlock("oth")));
+    body.push(branch(req("Type of administration", "oth.type", textInput("oth.type", "e.g. palatal, intraligamentary"), null, "LA type"), ...laBlock("oth")));
   return section("la", "LA", body);
 }
 function teethMulti(k){
@@ -397,19 +444,19 @@ function teethMulti(k){
 }
 function procRows(kp){
   const k = f => kp + "." + f;
-  const body = [ row("XLA completed", chips(k("method"), METHOD)) ];
-  if (S[k("method")] === "Non-surgically") body.push(branch(row("Removed with", chips(k("with"), REMOVED_WITH, true), "pick any")));
+  const body = [ req("XLA completed", k("method"), chips(k("method"), METHOD), null, "How XLA was completed") ];
+  if (S[k("method")] === "Non-surgically") body.push(branch(req("Removed with", k("with"), chips(k("with"), REMOVED_WITH, true), "pick any")));
   if (S[k("method")] === "Surgically") body.push(branch(
-    row("Incision", chips(k("inc"), INCISION)),
-    row("Retraction", chips(k("ret"), ["Not applicable","Yes","No"])),
-    row("Bone removal", chips(k("bone"), YESNO)),
-    row("Tooth sectioned", chips(k("sect"), YESNO))));
+    req("Incision", k("inc"), chips(k("inc"), INCISION)),
+    req("Retraction", k("ret"), chips(k("ret"), ["Not applicable","Yes","No"])),
+    req("Bone removal", k("bone"), chips(k("bone"), YESNO)),
+    req("Tooth sectioned", k("sect"), chips(k("sect"), YESNO))));
   body.push(row("Difficulty", chips(k("diff"), DIFFICULTY)));
   body.push(row("Apices intact and seen", chips(k("apices"), APICES)));
   body.push(row("Haemostatic sponge", chips(k("sponge"), YESNO)));
   body.push(row("Sutures", chips(k("sut"), YESNO)));
   if (S[k("sut")] === "Yes"){
-    const sub = [ row("Number", chips(k("sutn"), SUT_N)), row("Type", chips(k("sutt"), SUT_T)) ];
+    const sub = [ req("Number", k("sutn"), chips(k("sutn"), SUT_N), null, "Number of sutures"), req("Type", k("sutt"), chips(k("sutt"), SUT_T), null, "Suture type") ];
     if (S[k("sutt")] === "Vicryl rapide") sub.push(fixed(k("vrTxt"), VR_TEXT));
     if (S[k("sutt")] === "Vicryl") sub.push(fixed(k("vTxt"), V_TEXT));
     body.push(branch(...sub));
@@ -420,7 +467,7 @@ function procRows(kp){
 function extSection(){
   const teeth = allTeeth();
   const tag = teeth.length ? el("span", { class: "tag" }, teeth.join(", ")) : null;
-  const body = [ row("Teeth", teethMulti(EXT + ".teeth"), "pick any") ];
+  const body = [ req("Teeth", EXT + ".teeth", teethMulti(EXT + ".teeth"), "pick any") ];
   if (teeth.length > 1) body.push(row("Different per tooth", tick("split", "Teeth needed different treatment"), "if not all the same"));
   if (S.split && teeth.length > 1){
     teeth.forEach(n => {
@@ -435,7 +482,7 @@ function extSection(){
 function immSection(){
   if (!S.imm) return null;
   return section("imm", "Immediate denture", [
-    row("Arch", chips("immArch", IMM_ARCH)),
+    req("Arch", "immArch", chips("immArch", IMM_ARCH), null, "Immediate denture arch"),
     fixed("immFit", IMM_FIT_TEXT),
     row("Adjustments", chips("immAdj", IMM_ADJ, true), "pick any"),
     row("Patient", chips("immHappy", IMM_HAPPY)),
@@ -572,16 +619,18 @@ function buildNote(){
 /* ---------- render ---------- */
 function renderNote(){ $("note").textContent = buildNote() || "Your note builds here as you tap."; }
 function render(){
+  NEED = []; REQ_KEYS = new Set();
   const f = $("form");
   f.replaceChildren(...[apptSection(), mhSection(), laSection(), extSection(), immSection(), postSection(), endSection()].filter(Boolean));
-  renderNote();
+  renderNote(); showNeed();
   if (pendingFocus){ const i = f.querySelector('[data-key="' + pendingFocus + '"]'); if (i) i.focus(); pendingFocus = null; }
 }
 
 /* ---------- actions ---------- */
 let tt;
-function toast(msg){ const t = $("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(tt); tt = setTimeout(() => t.classList.remove("show"), 1600); }
+function toast(msg, ms){ const t = $("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(tt); tt = setTimeout(() => t.classList.remove("show"), ms || 1600); }
 async function copyNote(){
+  if (!needCheck()) return;
   const txt = buildNote();
   if (!txt){ toast("Nothing to copy yet"); return; }
   let ok = false;

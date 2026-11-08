@@ -14,6 +14,7 @@ Dental note builder used chairside by a general dentist in Auckland, New Zealand
 - New Zealand English. "DA", never "nurse". No UK-specific references (NHS, UK labs, DBOH, ACORN).
 - Nothing is saved about patients: no localStorage, cookies or network calls for note content.
 - Lines only appear in the note when something is selected or a fixed sentence is ticked.
+- Follow-ups that must be answered once their parent is picked use `req(label, key, ctrl, hint, name)` instead of `row(...)`: the label shows "needed", a "Still to fill" box sits above the note, and Copy asks once before copying anyway.
 - Every option button and fixed sentence can be double-clicked to edit its wording for the current note.
 - Applying a pasted change list: each line names the template, option or sentence, the field (last part of the state key, e.g. `prev` maps to the `PREV` list, `riskLine` to `RISK_TEXT`), and the old and new wording. Change that string in the constant in `src/`, rebuild, commit and push.
 - Option lists sit as constants at the top of each template's script; edit them there.

@@ -121,6 +121,17 @@ aside{background:var(--surface);border-left:1px solid var(--line);padding:22px 2
 }
 .txt.num{max-width:110px}
 @media (prefers-reduced-motion: reduce){.toast{transition:none}}
+/* follow-ups still to fill */
+.row.need > .lab{color:#9A5B00}
+.row.need > .lab::after{content:"needed";display:inline-block;margin-left:6px;padding:0 6px;border-radius:999px;background:#FBE7C6;color:#7A4700;font-size:.72rem;font-weight:600;vertical-align:1px}
+.need-box{border:1px solid #E7C38A;background:#FDF4E4;color:#5E3B00;border-radius:9px;padding:8px 11px;font-size:.84rem;line-height:1.5}
+.need-box b{font-weight:700}
+.need-box button{background:none;border:0;padding:0;color:inherit;text-decoration:underline;text-underline-offset:2px;font-size:inherit}
+.row.flash{animation:needflash 1.2s ease-out}
+@keyframes needflash{0%{background:#FBE7C6}100%{background:transparent}}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .row.need > .lab{color:#F2B25C}:root:not([data-theme="light"]) .row.need > .lab::after{background:#4A3410;color:#F6CF8F}:root:not([data-theme="light"]) .need-box{background:#2E2410;border-color:#6B5221;color:#F6DDB0}}
+:root[data-theme="dark"] .row.need > .lab{color:#F2B25C}:root[data-theme="dark"] .row.need > .lab::after{background:#4A3410;color:#F6CF8F}:root[data-theme="dark"] .need-box{background:#2E2410;border-color:#6B5221;color:#F6DDB0}
+@media (prefers-reduced-motion: reduce){.row.flash{animation:none}}
 </style>
 </head>
 <body>
@@ -237,13 +248,48 @@ function chips(k, opts, multi){
 }
 function textInput(k, ph, cls){
   return el("input", { type: "text", class: cls || "txt", placeholder: ph || "", value: S[k] || "", "data-key": k, autocomplete: "off",
-    oninput(e){ S[k] = e.target.value; renderNote(); } });
+    oninput(e){ const was = filled(k); S[k] = e.target.value;
+      if (REQ_KEYS.has(k) && was !== filled(k)){ pendingFocus = k; render(); const n = document.querySelector('[data-key="' + k + '"]'); if (n) n.setSelectionRange(n.value.length, n.value.length); }
+      else renderNote(); } });
 }
 function textArea(k, ph){
   const t = el("textarea", { class: "txt", placeholder: ph || "", "data-key": k, oninput(e){ S[k] = e.target.value; renderNote(); } });
   t.value = S[k] || ""; return t;
 }
 function row(label, ctrl, hint){ return el("div", { class: "row" }, el("div", { class: "lab" }, label, hint ? el("small", null, hint) : null), el("div", null, ctrl)); }
+/* ---------- follow-ups still to fill: req() rows are flagged while empty, and Copy asks once first ---------- */
+let NEED = [], REQ_KEYS = new Set(), warnedAt = 0;
+function filled(k){
+  const v = S[k], oth = () => !!(S[k + "~o"] || "").trim();
+  if (Array.isArray(v)) return v.some(x => x !== "Other") || (v.includes("Other") && oth());
+  if (v === "Other") return oth();
+  return v != null && v !== false && String(v).trim() !== "";
+}
+function req(label, k, ctrl, hint, name){
+  const r = row(label, ctrl, hint);
+  REQ_KEYS.add(k);
+  if (!filled(k)){ r.classList.add("need"); NEED.push({ name: name || label, el: r }); }
+  return r;
+}
+function showNeed(){
+  let box = $("needBox");
+  if (!box){ box = el("div", { id: "needBox", class: "need-box", role: "status" }); $("note").parentNode.insertBefore(box, $("note")); }
+  box.hidden = !NEED.length;
+  box.replaceChildren(...(NEED.length ? [el("b", null, "Still to fill: ")] : []), ...NEED.flatMap((n, i) => [i ? ", " : "",
+    el("button", { type: "button", onclick(){ goNeed(n); } }, n.name)]));
+}
+function goNeed(n){
+  n.el.scrollIntoView({ behavior: "smooth", block: "center" });
+  n.el.classList.remove("flash"); void n.el.offsetWidth; n.el.classList.add("flash");
+  const f = n.el.querySelector("button, input, textarea"); if (f) f.focus({ preventScroll: true });
+}
+function needCheck(){
+  if (!NEED.length || Date.now() - warnedAt < 8000){ warnedAt = 0; return true; }
+  warnedAt = Date.now();
+  toast("Still to fill: " + NEED.map(n => n.name).join(", ") + ". Press Copy again to copy anyway.", 5000);
+  goNeed(NEED[0]);
+  return false;
+}
 function branch(...rows){ return el("div", { class: "branch" }, ...rows); }
 function fixed(k, text){
   const cb = el("input", { type: "checkbox", id: "cb-" + k, checked: S[k] ? "checked" : false, "aria-label": "Include in note", onchange(e){ S[k] = e.target.checked; render(); } });
@@ -282,18 +328,19 @@ function teethPicker(k){
       set.size ? el("button", { type: "button", class: "link", onclick(){ S[k] = []; render(); } }, "Clear tooth") : null));
 }
 function laBlock(kb){
-  return [ row("Anaesthetic", chips(kb + ".agent", AGENTS)), row("Volume", chips(kb + ".vol", VOLS)), row("Cartridge", chips(kb + ".cart", CARTS)) ];
+  const nm = { inf: "Infiltration", ianb: "IANB", oth: "LA" }[kb] || "LA";
+  return [ req("Anaesthetic", kb + ".agent", chips(kb + ".agent", AGENTS), null, nm + " anaesthetic"), req("Volume", kb + ".vol", chips(kb + ".vol", VOLS), null, nm + " volume"), req("Cartridge", kb + ".cart", chips(kb + ".cart", CARTS), null, nm + " cartridge") ];
 }
 
 function laSection(){
   const t = S.la;
   const body = [ row("LA", chips("la", LA_TYPES)) ];
   if (t === "Infiltration" || t === "IANB + infiltration")
-    body.push(branch(row("Infiltration site", chips("inf.site", SITES, true), "pick any"), ...laBlock("inf")));
+    body.push(branch(req("Infiltration site", "inf.site", chips("inf.site", SITES, true), "pick any"), ...laBlock("inf")));
   if (t === "IANB" || t === "IANB + infiltration")
-    body.push(branch(row("IANB side", chips("ianb.side", t === "IANB + infiltration" ? ["RHS","LHS","Bilateral"] : ["RHS","LHS"])), ...laBlock("ianb")));
+    body.push(branch(req("IANB side", "ianb.side", chips("ianb.side", t === "IANB + infiltration" ? ["RHS","LHS","Bilateral"] : ["RHS","LHS"])), ...laBlock("ianb")));
   if (t === "Other")
-    body.push(branch(row("Type of administration", textInput("oth.type", "e.g. palatal, intraligamentary")), ...laBlock("oth")));
+    body.push(branch(req("Type of administration", "oth.type", textInput("oth.type", "e.g. palatal, intraligamentary"), null, "LA type"), ...laBlock("oth")));
   return section("la", "LA", body);
 }
 function laLine(kb, prefix){
@@ -465,7 +512,7 @@ function preSection(){
     row("Clinician", textInput("clin", "Clinician name")),
     row("DA", chips("da", DA_LIST)),
     row("MH checked", chips("mh", MH_LIST)),
-    row("Tooth", teethPicker("tooth"), "one tooth"),
+    req("Tooth", "tooth", teethPicker("tooth"), "one tooth"),
     row("Visit", chips("visit", VISITS)),
     row(first() ? "Pre-operative symptoms" : "Symptoms since last visit", chips("sym", SYMPTOMS))
   ];
@@ -513,7 +560,7 @@ function radSection(){
 function finishSection(){
   const body = [ row("Finished today?", tick("dress", "Not finished today, interim dressing placed")) ];
   if (dressed()){
-    body.push(branch(fixed("dressTxt", DRESS_TEXT), row("Dressed with", chips("dr1", DRESS_1)), row("Sealed with", chips("dr2", DRESS_2))));
+    body.push(branch(fixed("dressTxt", DRESS_TEXT), req("Dressed with", "dr1", chips("dr1", DRESS_1)), req("Sealed with", "dr2", chips("dr2", DRESS_2))));
     return section("finish", "Interim dressing", body);
   }
   body.push(row("Obturation technique", chips("obt", OBT_TECH)));
@@ -522,7 +569,7 @@ function finishSection(){
   if (S.postRad) body.push(branch(row("Grade", chips("postGrade", GRADES)), row("Report", chips("postRep", POST_RAD_REPORT))));
   body.push(row("Canal openings sealed with", chips("orifice", ORIFICE)));
   body.push(row("Restored with", chips("restored", RESTORED)));
-  if (S.restored === "Composite") body.push(branch(row("Composite", chips("brand", BRANDS)), row("Shade", chips("shade", SHADES))));
+  if (S.restored === "Composite") body.push(branch(req("Composite", "brand", chips("brand", BRANDS), null, "Composite brand"), req("Shade", "shade", chips("shade", SHADES))));
   body.push(row("Definitive restoration", chips("defin", DEFINITIVE)));
   return section("finish", "Obturation and restoration", body);
 }
@@ -620,15 +667,17 @@ function buildNote(){
   return out.join("\n\n");
 }
 function render(){
+  NEED = []; REQ_KEYS = new Set();
   const f = $("form");
   f.replaceChildren(preSection(), laSection(), accessSection(), lengthSection(), shapingSection(), radSection(), finishSection(), postSection(), endSection());
-  renderNote();
+  renderNote(); showNeed();
   if (pendingFocus){ const el2 = f.querySelector('[data-key="' + pendingFocus + '"]'); if (el2) el2.focus(); pendingFocus = null; }
 }
 /* ---------- actions ---------- */
 let tt;
-function toast(msg){ const t = $("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(tt); tt = setTimeout(() => t.classList.remove("show"), 1600); }
+function toast(msg, ms){ const t = $("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(tt); tt = setTimeout(() => t.classList.remove("show"), ms || 1600); }
 async function copyNote(){
+  if (!needCheck()) return;
   const txt = buildNote();
   if (!txt){ toast("Nothing to copy yet"); return; }
   let ok = false;
