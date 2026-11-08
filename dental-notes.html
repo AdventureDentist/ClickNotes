@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Treatment notes</title>
+<title>Treatment Notes</title>
 <style>
 :root{--paper:#EEF1F0;--surface:#FFFFFF;--ink:#1C2A30;--muted:#5E6E75;--line:#D3DCDB;--accent:#1F6470;--accent-ink:#FFFFFF;--ok:#2F6B3B;
   --sans:"Segoe UI Variable Text","Segoe UI",-apple-system,BlinkMacSystemFont,system-ui,sans-serif;color-scheme:light;box-sizing:border-box}
@@ -20,7 +20,7 @@ nav strong{margin-right:14px;font-size:.95rem;white-space:nowrap}
 .coffee{margin-left:6px;padding:6px 12px;border:1px solid var(--line);border-radius:999px;color:var(--muted);font-size:.85rem;text-decoration:none;white-space:nowrap;align-self:center;margin-bottom:4px}
 .coffee:hover{color:var(--ink);border-color:var(--muted)}
 .coffee:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-@media (max-width:1100px){nav .coffee{display:none}}
+@media (max-width:1100px){nav .coffee .lbl{display:none}}
 .tab:hover{color:var(--ink)}
 .tab[aria-selected="true"]{color:var(--ink);font-weight:700;border-bottom-color:var(--accent)}
 .tab:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
@@ -46,15 +46,15 @@ iframe.on{display:block}
 </style>
 </head>
 <body>
-<nav role="tablist" aria-label="Note templates"><strong>Treatment notes <span class="beta">(beta)</span></strong><button type="button" class="tab" data-key="filling" role="tab" aria-selected="false">Filling</button><button type="button" class="tab" data-key="extraction" role="tab" aria-selected="false">Extraction</button><button type="button" class="tab" data-key="prep" role="tab" aria-selected="false">Indirect prep</button><button type="button" class="tab" data-key="fit" role="tab" aria-selected="false">Indirect fit</button><button type="button" class="tab" data-key="endo" role="tab" aria-selected="false">Endo</button><button type="button" class="tab" data-key="denture" role="tab" aria-selected="false">Dentures</button><button type="button" class="tab right" data-key="info" role="tab" aria-selected="false">Your details</button><a class="coffee" href="https://buymeacoffee.com/adventuredentist" target="_blank" rel="noopener noreferrer">☕ Buy me a coffee</a>
+<nav role="tablist" aria-label="Note templates"><strong>Treatment Notes</strong><button type="button" class="tab" data-key="filling" role="tab" aria-selected="false">Restoration</button><button type="button" class="tab" data-key="extraction" role="tab" aria-selected="false">Extraction</button><button type="button" class="tab" data-key="prep" role="tab" aria-selected="false">Indirect prep</button><button type="button" class="tab" data-key="fit" role="tab" aria-selected="false">Indirect fit</button><button type="button" class="tab" data-key="endo" role="tab" aria-selected="false">Endo</button><button type="button" class="tab" data-key="denture" role="tab" aria-selected="false">Dentures</button><button type="button" class="tab right" data-key="info" role="tab" aria-selected="false">Your details</button><a class="coffee" href="https://buymeacoffee.com/adventuredentist" target="_blank" rel="noopener noreferrer" aria-label="Buy me a coffee" title="Buy me a coffee"><span aria-hidden="true">☕</span><span class="lbl"> Buy me a coffee</span></a>
 </nav>
 <main>
-<iframe id="f-filling" title="Filling note" allow="clipboard-write" srcdoc="&lt;!DOCTYPE html&gt;
+<iframe id="f-filling" title="Restoration note" allow="clipboard-write" srcdoc="&lt;!DOCTYPE html&gt;
 &lt;html lang=&quot;en-NZ&quot;&gt;
 &lt;head&gt;
 &lt;meta charset=&quot;utf-8&quot;&gt;
 &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1, viewport-fit=cover&quot;&gt;
-&lt;title&gt;Filling note&lt;/title&gt;
+&lt;title&gt;Restoration note&lt;/title&gt;
 &lt;style&gt;
 :root{
   --paper:#EEF1F0; --surface:#FFFFFF; --ink:#1C2A30; --muted:#5E6E75; --line:#D3DCDB;
@@ -176,7 +176,7 @@ aside{background:var(--surface);border-left:1px solid var(--line);padding:22px 2
 &lt;body&gt;
 &lt;div class=&quot;app&quot;&gt;
   &lt;main&gt;
-    &lt;div class=&quot;top&quot;&gt;&lt;h1&gt;Filling note&lt;/h1&gt;&lt;p&gt;Tap through the appointment, then copy the note. Double-click any option or sentence to change its wording.&lt;/p&gt;&lt;/div&gt;
+    &lt;div class=&quot;top&quot;&gt;&lt;h1&gt;Restoration note&lt;/h1&gt;&lt;p&gt;Tap through the appointment, then copy the note. Double-click any option or sentence to change its wording.&lt;/p&gt;&lt;/div&gt;
     &lt;div id=&quot;form&quot;&gt;&lt;/div&gt;
   &lt;/main&gt;
   &lt;aside aria-labelledby=&quot;noteTitle&quot;&gt;
@@ -380,7 +380,7 @@ function laBlock(kb){
 
 /* ---------- sections ---------- */
 function apptSection(){
-  return section(&quot;appt&quot;, &quot;Filling appointment&quot;, [
+  return section(&quot;appt&quot;, &quot;Restoration appointment&quot;, [
     row(&quot;Clinician&quot;, textInput(&quot;clin&quot;, &quot;Clinician name&quot;)),
     row(&quot;DA&quot;, chips(&quot;da&quot;, DA_LIST)),
     row(&quot;C/O&quot;, chips(&quot;co&quot;, CO_LIST)),
@@ -474,7 +474,7 @@ function laLine(kb, prefix){
 function buildNote(){
   const out = [];
   // appointment
-  const a = [&quot;** Filling Appointment **&quot;];
+  const a = [&quot;** Restoration Appointment **&quot;];
   if (S.clin &amp;&amp; S.clin.trim()) a.push(&quot;Clinician: &quot; + S.clin.trim());
   if (one(&quot;da&quot;)) a.push(&quot;DA: &quot; + one(&quot;da&quot;));
   if (one(&quot;co&quot;)) a.push(&quot;C/O: &quot; + one(&quot;co&quot;));
@@ -3638,7 +3638,7 @@ window.DN_apply = function(){
     document.querySelectorAll(".tab").forEach(t => t.setAttribute("aria-selected", String(t.dataset.key === k)));
     document.querySelectorAll("iframe").forEach(f => f.classList.toggle("on", f.id === "f-" + k));
     document.getElementById("p-info").classList.toggle("on", k === "info");
-    document.title = document.querySelector('.tab[data-key="' + k + '"]').textContent + " · Treatment notes";
+    document.title = document.querySelector('.tab[data-key="' + k + '"]').textContent + " · Treatment Notes";
     try { if (location.hash !== "#" + k) history.replaceState(null, "", "#" + k); } catch(e){ /* previews that block history changes: tabs still work */ }
   }
   document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => show(t.dataset.key)));

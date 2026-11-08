@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Filling note</title>
+<title>Restoration note</title>
 <style>
 :root{
   --paper:#EEF1F0; --surface:#FFFFFF; --ink:#1C2A30; --muted:#5E6E75; --line:#D3DCDB;
@@ -125,7 +125,7 @@ aside{background:var(--surface);border-left:1px solid var(--line);padding:22px 2
 <body>
 <div class="app">
   <main>
-    <div class="top"><h1>Filling note</h1><p>Tap through the appointment, then copy the note. Double-click any option or sentence to change its wording.</p></div>
+    <div class="top"><h1>Restoration note</h1><p>Tap through the appointment, then copy the note. Double-click any option or sentence to change its wording.</p></div>
     <div id="form"></div>
   </main>
   <aside aria-labelledby="noteTitle">
@@ -329,7 +329,7 @@ function laBlock(kb){
 
 /* ---------- sections ---------- */
 function apptSection(){
-  return section("appt", "Filling appointment", [
+  return section("appt", "Restoration appointment", [
     row("Clinician", textInput("clin", "Clinician name")),
     row("DA", chips("da", DA_LIST)),
     row("C/O", chips("co", CO_LIST)),
@@ -423,7 +423,7 @@ function laLine(kb, prefix){
 function buildNote(){
   const out = [];
   // appointment
-  const a = ["** Filling Appointment **"];
+  const a = ["** Restoration Appointment **"];
   if (S.clin && S.clin.trim()) a.push("Clinician: " + S.clin.trim());
   if (one("da")) a.push("DA: " + one("da"));
   if (one("co")) a.push("C/O: " + one("co"));
