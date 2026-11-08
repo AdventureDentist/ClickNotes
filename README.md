@@ -1,4 +1,4 @@
-# Dental notes (beta)
+# Treatment notes (beta)
 
 Tap-to-build clinical note templates for general dentistry: filling, extraction,
 indirect prep, indirect fit and endodontic treatment. Pick options, then copy a
