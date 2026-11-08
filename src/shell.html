@@ -36,24 +36,10 @@ iframe.on{display:block}
 .save{background:var(--accent);color:var(--accent-ink);border:1px solid var(--accent);font-weight:700}
 .reset{background:var(--surface);color:var(--ink);border:1px solid var(--line);margin-left:8px}
 .status{margin-left:12px;color:var(--ok);font-size:.9rem}
-/* EDITOR-ONLY START */
-#p-changes{position:absolute;inset:0;overflow:auto;display:none;padding:28px 28px 60px}
-#p-changes.on{display:block}
-.card ol{margin:0 0 20px;padding:0;list-style:none}
-.chg{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--line)}
-.chg div{flex:1;line-height:1.45;overflow-wrap:anywhere}
-.chg b{display:block;font-size:.85rem;color:var(--muted);font-weight:600}
-.chg del{color:var(--muted)}
-.card .chg button{padding:6px 12px;font-size:.88rem}
-.card textarea.out{font-size:.82rem;min-height:120px;font-family:ui-monospace,Consolas,monospace}
-/* EDITOR-ONLY END */
 </style>
 </head>
 <body>
 <nav role="tablist" aria-label="Note templates"><strong>Dental notes <span class="beta">(beta)</span></strong><button type="button" class="tab" data-key="filling" role="tab" aria-selected="false">Filling</button><button type="button" class="tab" data-key="extraction" role="tab" aria-selected="false">Extraction</button><button type="button" class="tab" data-key="prep" role="tab" aria-selected="false">Indirect prep</button><button type="button" class="tab" data-key="fit" role="tab" aria-selected="false">Indirect fit</button><button type="button" class="tab" data-key="endo" role="tab" aria-selected="false">Endo</button><button type="button" class="tab" data-key="denture" role="tab" aria-selected="false">Dentures</button><button type="button" class="tab right" data-key="info" role="tab" aria-selected="false">Your details</button>
-<!-- EDITOR-ONLY START -->
-<button type="button" class="tab" data-key="changes" role="tab" aria-selected="false" hidden>Changes <span id="ccount"></span></button>
-<!-- EDITOR-ONLY END -->
 </nav>
 <main>
 <iframe id="f-filling" title="Filling note" allow="clipboard-write" srcdoc="{{filling}}"></iframe>
@@ -73,18 +59,6 @@ iframe.on{display:block}
     <button type="button" class="save" id="save">Save details</button><button type="button" class="reset" id="reset">Clear details</button><span class="status" id="status" role="status"></span>
   </div>
 </section>
-<!-- EDITOR-ONLY START -->
-<section id="p-changes" aria-label="Template changes">
-  <div class="card">
-    <h1>Template changes</h1>
-    <p>Wording you saved with <em>Save to template</em>. It already shows in this browser. To make it permanent, press <strong>Copy for Claude</strong>, paste it into your Claude chat, and Claude will update the templates on GitHub. Once you're using the updated file, press <strong>Clear all</strong>.</p>
-    <ol id="clist"></ol>
-    <label for="cout">Message for Claude</label>
-    <textarea id="cout" class="out" readonly></textarea>
-    <button type="button" class="save" id="ccopy">Copy for Claude</button><button type="button" class="reset" id="cclear">Clear all</button><span class="status" id="cstatus" role="status"></span>
-  </div>
-</section>
-<!-- EDITOR-ONLY END -->
 </main>
 <script>
 (function(){
@@ -106,63 +80,9 @@ iframe.on{display:block}
   document.getElementById("reset").onclick = () => save({ clinician: DEF.clinician, das: DEF.das.slice() }, "Cleared");
   fill();
 
-  /* EDITOR-ONLY START */
-  /* ---------- saved template wording (never patient details) ---------- */
-  const WKEY = "dentalnotes.wording";
-  const NAMES = { filling: "Filling", extraction: "Extraction", prep: "Indirect prep", fit: "Indirect fit", endo: "Endo", denture: "Dentures" };
-  const same = (x, c) => x.tpl === c.tpl && x.kind === c.kind && x.field === c.field && x.from === c.from;
-  let wording = []; try { wording = JSON.parse(localStorage.getItem(WKEY) || "[]") || []; } catch(e){}
-  function storeW(){ try { localStorage.setItem(WKEY, JSON.stringify(wording)); return true; } catch(e){ return false; } }
-  function rerender(){ document.querySelectorAll("iframe").forEach(f => { try { f.contentWindow.DN_rerender && f.contentWindow.DN_rerender(); } catch(e){} }); }
-  window.DN_WORDING = { all: () => wording, set(c){ wording = wording.filter(x => !same(x, c)); if (c.to !== c.from) wording.push(c); const ok = storeW(); renderChanges(); return ok; } };
-  function changesText(){
-    return "Please apply these wording changes to the ClickNotes templates, then rebuild and push:\n\n" +
-      wording.map(c => "- " + (NAMES[c.tpl] || c.tpl) + ", " + c.kind + " (" + c.field + "): " + JSON.stringify(c.from) + " -> " + JSON.stringify(c.to)).join("\n");
-  }
-  const clist = document.getElementById("clist"), cout = document.getElementById("cout"), cstatus = document.getElementById("cstatus");
-  function renderChanges(){
-    const tab = document.querySelector('.tab[data-key="changes"]');
-    tab.hidden = !wording.length;
-    document.getElementById("ccount").textContent = wording.length ? "(" + wording.length + ")" : "";
-    clist.textContent = "";
-    wording.forEach(c => {
-      const li = document.createElement("li"); li.className = "chg";
-      const d = document.createElement("div"), b = document.createElement("b"), del = document.createElement("del"), ins = document.createElement("span");
-      b.textContent = (NAMES[c.tpl] || c.tpl) + " · " + (c.kind === "option" ? "option" : "sentence");
-      del.textContent = c.from; ins.textContent = c.to;
-      d.append(b, del, document.createElement("br"), "→ ", ins);
-      const u = document.createElement("button"); u.type = "button"; u.className = "reset"; u.textContent = "Undo";
-      u.onclick = () => { window.DN_WORDING.set(Object.assign({}, c, { to: c.from })); rerender(); };
-      li.append(d, u); clist.append(li);
-    });
-    cout.value = wording.length ? changesText() : "";
-    if (!wording.length && document.getElementById("p-changes").classList.contains("on")) show("info");
-  }
-  function flash(msg){ cstatus.textContent = msg; setTimeout(() => cstatus.textContent = "", 3000); }
-  document.getElementById("ccopy").onclick = () => {
-    const fallback = () => { cout.focus(); cout.select(); let ok = false; try { ok = document.execCommand("copy"); } catch(e){} flash(ok ? "Copied" : "Select the message above and copy it"); };
-    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(cout.value).then(() => flash("Copied"), fallback); else fallback();
-  };
-  /* two-step confirm on the button itself: previews often block confirm() pop-ups */
-  const cclear = document.getElementById("cclear"); let armed = null;
-  function disarm(){ clearTimeout(armed); armed = null; cclear.textContent = "Clear all"; }
-  cclear.onclick = () => {
-    if (!armed){ cclear.textContent = "Tap again to clear " + wording.length; armed = setTimeout(disarm, 4000); return; }
-    disarm(); wording = []; const ok = storeW(); renderChanges(); rerender();
-    if (!ok) flash("Cleared for now, but this browser may bring them back on reload");
-  };
-
-  /* EDITOR-ONLY END */
   const keys = ['filling', 'extraction', 'prep', 'fit', 'endo', 'denture', 'info'];
-  /* EDITOR-ONLY START */
-  keys.push('changes');
-  /* EDITOR-ONLY END */
   function show(k){
     if (!keys.includes(k)) k = keys[0];
-    /* EDITOR-ONLY START */
-    if (k === "changes" && !wording.length) k = keys[0];
-    document.getElementById("p-changes").classList.toggle("on", k === "changes");
-    /* EDITOR-ONLY END */
     document.querySelectorAll(".tab").forEach(t => t.setAttribute("aria-selected", String(t.dataset.key === k)));
     document.querySelectorAll("iframe").forEach(f => f.classList.toggle("on", f.id === "f-" + k));
     document.getElementById("p-info").classList.toggle("on", k === "info");
@@ -172,9 +92,6 @@ iframe.on{display:block}
   document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => show(t.dataset.key)));
   window.addEventListener("hashchange", () => show(location.hash.slice(1)));
   document.addEventListener("keydown", e => { if (e.altKey && /^[1-6]$/.test(e.key)){ e.preventDefault(); show(keys[+e.key - 1]); } });
-  /* EDITOR-ONLY START */
-  renderChanges();
-  /* EDITOR-ONLY END */
   show(firstRun && !window.DN_SETTINGS.clinician ? "info" : location.hash.slice(1));
 })();
 </script>

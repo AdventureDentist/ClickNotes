@@ -17,7 +17,4 @@ them, rebuild the combined file:
 
     python build.py
 
-This writes `dental-notes.html` (the public file) and `dental-notes-editor.html`, a private
-copy with extra tools for editing template wording. The editor copy is not committed.
-
 Each page can also be opened on its own for testing.
