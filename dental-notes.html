@@ -44,6 +44,8 @@ iframe.on{display:block}
 .card ul.help{margin:0 0 14px;padding-left:20px;list-style:disc}
 .card ul.help li{margin:0 0 8px;line-height:1.45}
 .card ul.help li::marker{color:var(--muted)}
+.card ol.steps{margin:0 0 14px;padding-left:22px;list-style:decimal}
+.card ol.steps li{margin:0 0 8px;line-height:1.45}
 kbd{font-family:inherit;font-size:.85em;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:0 5px;background:var(--surface)}
 .card code{font-size:.85em;overflow-wrap:anywhere}
 .coffee.big{display:inline-block;margin:0;padding:9px 16px;font-size:.95rem;color:var(--ink)}
@@ -3607,8 +3609,8 @@ window.DN_apply = function(){
   <div class="card">
     <h1>Settings</h1>
     <h2>Your details</h2>
-    <p>The dentist and dental assistant names are used across every template. They’re saved in this browser on this computer only, so each person sharing the file can set their own.</p>
-    <label for="clin">Dentist name <small>Shown as the Clinician line in every note.</small></label>
+    <p>The clinician and dental assistant names are used across every template. They’re saved in this browser on this computer only, so each person sharing the file can set their own.</p>
+    <label for="clin">Clinician name <small>For dentists, hygienists and therapists. Shown as the Clinician line in every note.</small></label>
     <input id="clin" type="text" autocomplete="off" placeholder="e.g. Dr Alex Smith">
     <label for="das">Dental assistant names <small>One per line. The first name is selected by default, and you can still pick Other in any note.</small></label>
     <textarea id="das" placeholder="e.g. Sam"></textarea>
@@ -3640,7 +3642,7 @@ window.DN_apply = function(){
   <div class="card sect">
     <h2>Defaults in each note</h2>
     <ul class="help">
-      <li>Your dentist name fills the Clinician line, and the first dental assistant listed is selected by default.</li>
+      <li>Your clinician name fills the Clinician line, and the first dental assistant listed is selected by default.</li>
       <li>Common choices start selected, such as Articaine 4% 1:100,000, 1.8ml cartridges, C/O Nil and MH no changes. Tap a different option to change it for that note.</li>
       <li>Double-click any option or sentence to reword it for the current note.</li>
       <li>Nothing about patients is ever saved. Closing the page or pressing <em>New note</em> clears the note.</li>
@@ -3648,7 +3650,25 @@ window.DN_apply = function(){
   </div>
   <div class="card sect">
     <h2>About this tool</h2>
-    <p>Clinical dentist trying to streamline my note taking and fed up with ‘dentist tax’ for simple tools. I hope this tool provides you with some value, and if you are able to donate it is much appreciated.</p>
+    <p>Treatment Notes is a free, tap-through note builder for dental appointments: restorations, extractions, indirect preps and fits, endo and dentures. Tap the options that match what you did and it writes a clear, consistently structured clinical note, ready to paste into your practice management software.</p>
+    <h3>Why use it</h3>
+    <ul class="help">
+      <li><strong>Free.</strong> No subscription, login or per-clinician licence.</li>
+      <li><strong>Fast and consistent.</strong> Every note follows the same structure, with risks, consent and post-op advice as tick boxes so nothing gets missed.</li>
+      <li><strong>Private by design.</strong> It runs entirely in your browser from a single file. Nothing about patients is saved or sent anywhere, and closing the page clears the note.</li>
+      <li><strong>Works offline.</strong> No internet connection, server or account needed, so it keeps working if the network drops.</li>
+      <li><strong>Fully editable.</strong> It’s one plain HTML file, so you can change any option, sentence or default to suit how you work, with help from an AI assistant such as Claude.</li>
+    </ul>
+    <h3>Changing the options with Claude</h3>
+    <ol class="steps">
+      <li>Go to <strong>claude.ai</strong> and start a new chat.</li>
+      <li>Attach your Treatment Notes HTML file.</li>
+      <li>Describe the change in plain words, for example: <em>“In the Extraction tab, add Coronectomy to the method options, and make Lidocaine 2% the default anaesthetic in every tab.”</em></li>
+      <li>Ask Claude to make the change in the file and give you back the complete updated file to download. The option lists sit near the top of each tab’s script, which makes them easy to find.</li>
+      <li>Save the new file over your old one and open it to check. Your details carry over.</li>
+    </ol>
+    <p>Keep a copy of the old file until you’ve checked the new one, and make one or two changes at a time.</p>
+    <p>If it saves you time, a coffee is much appreciated.</p>
     <a class="coffee big" href="https://buymeacoffee.com/adventuredentist" target="_blank" rel="noopener noreferrer">☕ Buy me a coffee</a>
   </div>
 </section>

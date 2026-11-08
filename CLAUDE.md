@@ -4,7 +4,7 @@ Dental note builder used chairside by a general dentist in Auckland, New Zealand
 
 ## Structure
 - `src/*-note.html`: one self-contained template per appointment type (HTML, CSS and JS in one file, no dependencies, works offline from file://).
-- `src/shell.html`: tab bar, Your details tab (dentist and DA names in localStorage key `dentalnotes.settings`), and `{{key}}` placeholders where each template is embedded as an iframe srcdoc.
+- `src/shell.html`: tab bar, Settings panel behind the cog (clinician and DA names, set-up help, About in localStorage key `dentalnotes.settings`), and `{{key}}` placeholders where each template is embedded as an iframe srcdoc.
 - `build.py`: produces `dental-notes.html`. Always rebuild after editing anything in `src/`, and commit the built file.
 - `editor/` (gitignored, private, never commit or push it): the dentist's own editing overlay. When present, `build.py` also writes `dental-notes-editor.html` (also gitignored). A fresh clone won't have it; ask the dentist to upload their copy of `editor/overlay.json` if they want the editor copy rebuilt.
 
@@ -17,7 +17,7 @@ Dental note builder used chairside by a general dentist in Auckland, New Zealand
 - Every option button and fixed sentence can be double-clicked to edit its wording for the current note.
 - Applying a pasted change list: each line names the template, option or sentence, the field (last part of the state key, e.g. `prev` maps to the `PREV` list, `riskLine` to `RISK_TEXT`), and the old and new wording. Change that string in the constant in `src/`, rebuild, commit and push.
 - Option lists sit as constants at the top of each template's script; edit them there.
-- Dentist and DA names default to blank and come from the Your details tab.
+- Clinician (dentist, hygienist or therapist) and DA names default to blank and come from the Settings panel.
 
 ## Defaults the dentist asked for
 - LA: Articaine 4% 1:100,000 first and preselected; 1.8ml cartridges.
