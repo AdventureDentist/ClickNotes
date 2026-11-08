@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Filling note</title>
+<title>Restoration note</title>
 <style>
 :root{
   --paper:#EEF1F0; --surface:#FFFFFF; --ink:#1C2A30; --muted:#5E6E75; --line:#D3DCDB;
@@ -120,12 +120,23 @@ aside{background:var(--surface);border-left:1px solid var(--line);padding:22px 2
   .tooth{width:28px;height:30px;font-size:.74rem}
 }
 @media (prefers-reduced-motion: reduce){.toast{transition:none}}
+/* follow-ups still to fill */
+.row.need > .lab{color:#9A5B00}
+.row.need > .lab::after{content:"needed";display:inline-block;margin-left:6px;padding:0 6px;border-radius:999px;background:#FBE7C6;color:#7A4700;font-size:.72rem;font-weight:600;vertical-align:1px}
+.need-box{border:1px solid #E7C38A;background:#FDF4E4;color:#5E3B00;border-radius:9px;padding:8px 11px;font-size:.84rem;line-height:1.5}
+.need-box b{font-weight:700}
+.need-box button{background:none;border:0;padding:0;color:inherit;text-decoration:underline;text-underline-offset:2px;font-size:inherit}
+.row.flash{animation:needflash 1.2s ease-out}
+@keyframes needflash{0%{background:#FBE7C6}100%{background:transparent}}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .row.need > .lab{color:#F2B25C}:root:not([data-theme="light"]) .row.need > .lab::after{background:#4A3410;color:#F6CF8F}:root:not([data-theme="light"]) .need-box{background:#2E2410;border-color:#6B5221;color:#F6DDB0}}
+:root[data-theme="dark"] .row.need > .lab{color:#F2B25C}:root[data-theme="dark"] .row.need > .lab::after{background:#4A3410;color:#F6CF8F}:root[data-theme="dark"] .need-box{background:#2E2410;border-color:#6B5221;color:#F6DDB0}
+@media (prefers-reduced-motion: reduce){.row.flash{animation:none}}
 </style>
 </head>
 <body>
 <div class="app">
   <main>
-    <div class="top"><h1>Filling note</h1><p>Tap through the appointment, then copy the note. Double-click any option or sentence to change its wording.</p></div>
+    <div class="top"><h1>Restoration note</h1><p>Tap through the appointment, then copy the note. Double-click any option or sentence to change its wording.</p></div>
     <div id="form"></div>
   </main>
   <aside aria-labelledby="noteTitle">
@@ -178,11 +189,12 @@ const CARTS = ["1.8ml","2.2ml","Other"];
 const SURFACES = ["M","O","D","B","L","P","I"];
 const OCC_PRE = "Occlusion checked with articulating paper, contacts noted in ICP and excursions prior to restoration.";
 const MOIST = ["rubber dam","cotton wool rolls + high volume suction","Optragate","Greater Curve","Other"];
-const PREV = ["Previously unrestored tooth","Old restoration removed with high speed diamond","Old restoration already out","Lock cut into existing restoration","Other"];
-const CARIES = ["Caries accessed with high speed diamond","Caries free cavity","Other"];
-const CARIES2 = ["Periphery caries removed from the ADJ and prepared to hard dentine","All caries cleared with rosehead","Other"];
+const PREV = ["Unrestored tooth","Old restoration removed","Old restoration already out","Lock cut into existing restoration","Other"];
+const CARIES = ["Caries accessed","Caries free cavity","Other"];
+const CARIES2 = ["Selective caries removal, ADJ cleared","Complete caries removal","Other"];
 const SCR = ["removal to firm dentine over pulp","removal to soft dentine over pulp","Other"];
 const LINER = ["placed","not required"];
+const AMALGAM_TEXT = "Amalgam condensed and burnished.";
 const PROTOCOL = "Base sealed with flowable composite, followed by snowplough technique with flowable and packable composite.";
 const LINER_MAT = ["Dycal","Life","Ionoseal","TheraCal","Vitrebond","Biodentine","Other"];
 const MATRIX = ["Greater Curve band","Circumferential matrix band","Sectional matrix band and ring","Mylar strip","PTFE","No matrix band required","Other"];
@@ -192,11 +204,10 @@ const SHADES = ["A1","A2","A3","A3.5","Other"];
 const BRANDS = ["3M Filtek","Empress Direct","Other"];
 const OCC_AFTER = ["and adjusted, patient comfortable with bite","no adjustment required","Other"];
 
-const POST_BASE = "Patient advised to return if there are any problems. Advised some sensitivity is normal however this should settle. Any prolonged sensitivity or symptoms and the tooth may require further treatment e.g. RCT or XLA.";
-const POST_PULP = "Post op pain warning given as decay was close to pulp. Analgesics advised if painful. If pain does not settle after a couple of weeks then RCT/XLA may be necessary.";
-const POST_GIC = "Patient is aware that GIC is often a short-medium term filling material.";
-const GIC_OPTS = ["Patient will need to return for a permanent filling","In this case, we will leave it as a permanent filling but it will require regular reviews","Advised the prognosis of this tooth is poor"];
-const POST_COMP = "Advised that some sensitivity is normal. Should settle down in a couple of days.";
+const POST_BASE = "Advised to get in touch if any problems arise. Explained that mild sensitivity can occur and usually settles, but sensitivity or symptoms that persist may mean the tooth needs further treatment such as RCT or XLA.";
+const POST_PULP = "Warned of possible post-op pain as the caries was close to the pulp. Advised pain relief as needed, and that if pain has not settled within a couple of weeks, RCT or XLA may be needed.";
+const POST_GIC = "Patient understands that GIC is generally a short to medium term restoration.";
+const POST_COMP = "Advised that some sensitivity is expected and should ease within a few days.";
 
 /* ---------- state ---------- */
 let S = {}, R = [], pendingFocus = null;
@@ -205,7 +216,7 @@ const uid = () => "r" + Math.random().toString(36).slice(2, 8);
 function newRest(){
   const id = uid();
   Object.assign(S, { [id + ".occPre"]: true, [id + ".moist"]: ["cotton wool rolls + high volume suction"], [id + ".mat"]: "Greater Curve band",
-    [id + ".gc"]: "Standard", [id + ".proto"]: true,
+    [id + ".gc"]: "Standard", [id + ".proto"]: true, [id + ".amal"]: true,
     [id + ".ss"]: true, [id + ".brand"]: BRANDS[0], [id + ".cod"]: true, [id + ".lin"]: "not required" });
   return id;
 }
@@ -279,13 +290,48 @@ function chips(k, opts, multi){
 }
 function textInput(k, ph, cls){
   return el("input", { type: "text", class: cls || "txt", placeholder: ph || "", value: S[k] || "", "data-key": k, autocomplete: "off",
-    oninput(e){ S[k] = e.target.value; renderNote(); } });
+    oninput(e){ const was = filled(k); S[k] = e.target.value;
+      if (REQ_KEYS.has(k) && was !== filled(k)){ pendingFocus = k; render(); const n = document.querySelector('[data-key="' + k + '"]'); if (n) n.setSelectionRange(n.value.length, n.value.length); }
+      else renderNote(); } });
 }
 function textArea(k, ph){
   const t = el("textarea", { class: "txt", placeholder: ph || "", "data-key": k, oninput(e){ S[k] = e.target.value; renderNote(); } });
   t.value = S[k] || ""; return t;
 }
 function row(label, ctrl, hint){ return el("div", { class: "row" }, el("div", { class: "lab" }, label, hint ? el("small", null, hint) : null), el("div", null, ctrl)); }
+/* ---------- follow-ups still to fill: req() rows are flagged while empty, and Copy asks once first ---------- */
+let NEED = [], REQ_KEYS = new Set(), warnedAt = 0;
+function filled(k){
+  const v = S[k], oth = () => !!(S[k + "~o"] || "").trim();
+  if (Array.isArray(v)) return v.some(x => x !== "Other") || (v.includes("Other") && oth());
+  if (v === "Other") return oth();
+  return v != null && v !== false && String(v).trim() !== "";
+}
+function req(label, k, ctrl, hint, name){
+  const r = row(label, ctrl, hint);
+  REQ_KEYS.add(k);
+  if (!filled(k)){ r.classList.add("need"); NEED.push({ name: name || label, el: r }); }
+  return r;
+}
+function showNeed(){
+  let box = $("needBox");
+  if (!box){ box = el("div", { id: "needBox", class: "need-box", role: "status" }); $("note").parentNode.insertBefore(box, $("note")); }
+  box.hidden = !NEED.length;
+  box.replaceChildren(...(NEED.length ? [el("b", null, "Still to fill: ")] : []), ...NEED.flatMap((n, i) => [i ? ", " : "",
+    el("button", { type: "button", onclick(){ goNeed(n); } }, n.name)]));
+}
+function goNeed(n){
+  n.el.scrollIntoView({ behavior: "smooth", block: "center" });
+  n.el.classList.remove("flash"); void n.el.offsetWidth; n.el.classList.add("flash");
+  const f = n.el.querySelector("button, input, textarea"); if (f) f.focus({ preventScroll: true });
+}
+function needCheck(){
+  if (!NEED.length || Date.now() - warnedAt < 8000){ warnedAt = 0; return true; }
+  warnedAt = Date.now();
+  toast("Still to fill: " + NEED.map(n => n.name).join(", ") + ". Press Copy again to copy anyway.", 5000);
+  goNeed(NEED[0]);
+  return false;
+}
 function branch(...rows){ return el("div", { class: "branch" }, ...rows); }
 function fixed(k, text){
   const cb = el("input", { type: "checkbox", id: "cb-" + k, checked: S[k] ? "checked" : false, "aria-label": "Include in note", onchange(e){ S[k] = e.target.checked; render(); } });
@@ -324,12 +370,13 @@ function teethPicker(k){
       set.size ? el("button", { type: "button", class: "link", onclick(){ S[k] = []; render(); } }, "Clear tooth") : null));
 }
 function laBlock(kb){
-  return [ row("Anaesthetic", chips(kb + ".agent", AGENTS)), row("Volume", chips(kb + ".vol", VOLS)), row("Cartridge", chips(kb + ".cart", CARTS)) ];
+  const nm = { inf: "Infiltration", ianb: "IANB", oth: "LA" }[kb] || "LA";
+  return [ req("Anaesthetic", kb + ".agent", chips(kb + ".agent", AGENTS), null, nm + " anaesthetic"), req("Volume", kb + ".vol", chips(kb + ".vol", VOLS), null, nm + " volume"), req("Cartridge", kb + ".cart", chips(kb + ".cart", CARTS), null, nm + " cartridge") ];
 }
 
 /* ---------- sections ---------- */
 function apptSection(){
-  return section("appt", "Filling appointment", [
+  return section("appt", "Restoration appointment", [
     row("Clinician", textInput("clin", "Clinician name")),
     row("DA", chips("da", DA_LIST)),
     row("C/O", chips("co", CO_LIST)),
@@ -343,11 +390,11 @@ function laSection(){
   const t = S.la;
   const body = [ row("LA", chips("la", LA_TYPES)) ];
   if (t === "Infiltration" || t === "IANB + infiltration")
-    body.push(branch(row("Infiltration site", chips("inf.site", SITES, true), "pick any"), ...laBlock("inf")));
+    body.push(branch(req("Infiltration site", "inf.site", chips("inf.site", SITES, true), "pick any"), ...laBlock("inf")));
   if (t === "IANB" || t === "IANB + infiltration")
-    body.push(branch(row("IANB side", chips("ianb.side", ["RHS","LHS"])), ...laBlock("ianb")));
+    body.push(branch(req("IANB side", "ianb.side", chips("ianb.side", ["RHS","LHS"])), ...laBlock("ianb")));
   if (t === "Other")
-    body.push(branch(row("Type of administration", textInput("oth.type", "e.g. palatal, intraligamentary")), ...laBlock("oth")));
+    body.push(branch(req("Type of administration", "oth.type", textInput("oth.type", "e.g. palatal, intraligamentary"), null, "LA type"), ...laBlock("oth")));
   return section("la", "LA", body);
 }
 function restSection(id, i){
@@ -355,31 +402,32 @@ function restSection(id, i){
   const teeth = S[k("teeth")] || [];
   const tag = teeth.length ? el("span", { class: "tag" }, teethLabel(id)) : null;
   const body = [
-    row("Restoration of", teethPicker(k("teeth")), "one tooth"),
-    ...teeth.map(t => row("Surfaces of " + t, chips(k("surf." + t), SURFACES, true), "pick any")),
+    req("Restoration of", k("teeth"), teethPicker(k("teeth")), "one tooth", "Tooth"),
+    ...teeth.map(t => req("Surfaces of " + t, k("surf." + t), chips(k("surf." + t), SURFACES, true), "pick any")),
     fixed(k("occPre"), OCC_PRE),
     row("Moisture control", chips(k("moist"), MOIST, true), "pick any")
   ];
-  if (has(k("moist"), "rubber dam")) body.push(branch(row("Rubber dam", chips(k("rd"), ["Single","Multiple"]), "tooth isolation")));
+  if (has(k("moist"), "rubber dam")) body.push(branch(req("Rubber dam", k("rd"), chips(k("rd"), ["Single","Multiple"]), "tooth isolation")));
   body.push(row("Tooth", chips(k("prev"), PREV, true), "pick any"));
   body.push(row("Caries", chips(k("car"), CARIES)));
   if (S[k("car")] === CARIES[0]){
-    const sub = [ row("Caries removal", chips(k("car2"), CARIES2)) ];
-    if (S[k("car2")] === CARIES2[0]) sub.push(branch(row("Selective caries removal", chips(k("scr"), SCR))));
+    const sub = [ req("Caries removal", k("car2"), chips(k("car2"), CARIES2)) ];
+    if (S[k("car2")] === CARIES2[0]) sub.push(branch(req("Selective caries removal", k("scr"), chips(k("scr"), SCR))));
     body.push(branch(...sub));
   }
   body.push(row("Cavity liner/base", chips(k("lin"), LINER)));
-  if (S[k("lin")] === "placed") body.push(branch(row("Material used", chips(k("linmat"), LINER_MAT))));
+  if (S[k("lin")] === "placed") body.push(branch(req("Material used", k("linmat"), chips(k("linmat"), LINER_MAT), null, "Liner material")));
   body.push(row("Matrix system", chips(k("mat"), MATRIX)));
   const mat = S[k("mat")], mrows = [];
   if (mat === "Greater Curve band"){
-    mrows.push(row("Band", chips(k("gc"), GC_TYPES)));
-    mrows.push(row("Band options", el("div", { class: "chips" }, tick(k("ss"), "Stainless steel (brass if unticked)"), tick(k("cod"), "Contact opening drilled"), tick(k("thin"), "Ultra thin"))));
+    mrows.push(req("Band", k("gc"), chips(k("gc"), GC_TYPES), null, "Band type"));
+    mrows.push(row("Band options", el("div", { class: "chips" }, tick(k("ss"), "Stainless steel (brass if unticked)"), tick(k("cod"), "Contact opening"), tick(k("thin"), "Ultra thin"))));
   }
   if (mat && mat !== "No matrix band required") mrows.push(row("Wedge", tick(k("wedge"), "Wedge placed")));
   if (mrows.length) body.push(branch(...mrows));
-  body.push(row("Material", chips(k("matl"), MATERIALS)));
-  if (S[k("matl")] === "Composite") body.push(branch(row("Composite", chips(k("brand"), BRANDS)), row("Shade", chips(k("shade"), SHADES)), fixed(k("proto"), PROTOCOL)));
+  body.push(req("Material", k("matl"), chips(k("matl"), MATERIALS)));
+  if (S[k("matl")] === "Composite") body.push(branch(req("Composite", k("brand"), chips(k("brand"), BRANDS), null, "Composite brand"), req("Shade", k("shade"), chips(k("shade"), SHADES)), fixed(k("proto"), PROTOCOL)));
+  if (S[k("matl")] === "Amalgam") body.push(branch(fixed(k("amal"), AMALGAM_TEXT)));
   body.push(row("Occlusion checked", chips(k("occ"), OCC_AFTER)));
   const head = el("span", { class: "rest-h" }, tag,
     R.length > 1 ? el("span", { class: "remove", role: "button", tabindex: "0",
@@ -394,7 +442,7 @@ function postSection(){
   const comp = anyRest("matl", v => v === "Composite");
   const body = [ fixed("postBase", POST_BASE) ];
   if (pulp) body.push(fixed("postPulp", POST_PULP));
-  if (gic){ body.push(fixed("postGic", POST_GIC)); body.push(branch(row("GIC follow-up", chips("gicOpts", GIC_OPTS, true), "pick any"))); }
+  if (gic) body.push(fixed("postGic", POST_GIC));
   if (comp) body.push(fixed("postComp", POST_COMP));
   body.push(row("Other advice", textArea("postExtra", "Any other advice given")));
   return section("post", "Post-op discussion", body);
@@ -422,14 +470,14 @@ function laLine(kb, prefix){
 function buildNote(){
   const out = [];
   // appointment
-  const a = ["** Filling Appointment **"];
+  const a = ["** Restoration Appointment **"];
   if (S.clin && S.clin.trim()) a.push("Clinician: " + S.clin.trim());
   if (one("da")) a.push("DA: " + one("da"));
   if (one("co")) a.push("C/O: " + one("co"));
   if (one("mh")) a.push("MH checked: " + one("mh"));
   if (S.riskLine){
     const r = many("risks", RISKS);
-    a.push(sent(ft("riskLine", RISK_TEXT)) + (r.length ? " Also discussed case specific risk(s) of: " + andList(r.map(x => x.charAt(0).toLowerCase() + x.slice(1))) + "." : ""));
+    a.push(sent(ft("riskLine", RISK_TEXT)) + (r.length ? " Also discussed case specific risk(s) of: " + andList(r.map(x => /^[A-Z][a-z]/.test(x) ? x.charAt(0).toLowerCase() + x.slice(1) : x)) + "." : ""));
   }
   if (S.consent) a.push(sent(ft("consent", CONSENT_TEXT)));
   if (a.length > 1) out.push(a.join("\n"));
@@ -483,7 +531,7 @@ function buildNote(){
         const g = S[k("gc")];
         const type = g === "Standard" || g === "Wide" ? lab(k("gc"), g).toLowerCase() : one(k("gc"));
         ms = "Greater Curve " + [type, S[k("thin")] ? "ultra thin" : "", S[k("ss")] ? "stainless steel" : "brass"].filter(Boolean).join(" ") + " band";
-        if (S[k("cod")]) ms += ", contact opening drilled";
+        if (S[k("cod")]) ms += ", contact opening";
       } else ms = one(k("mat"));
       if (ms && S[k("wedge")] && mat !== "No matrix band required") ms += ", wedge placed";
       if (ms) lines.push("Matrix system: " + ms + ".");
@@ -494,7 +542,7 @@ function buildNote(){
       if (S[k("proto")]) lines.push(sent(ft(k("proto"), PROTOCOL)));
     }
     else if (m === "GIC") lines.push("GIC placed, vaseline applied.");
-    else if (m === "Amalgam") lines.push("Amalgam placed, condensed and burnished.");
+    else if (m === "Amalgam") lines.push(S[k("amal")] ? sent(ft(k("amal"), AMALGAM_TEXT)) : "Amalgam placed.");
     else if (m === "RMGIC") lines.push("RMGIC placed and cured.");
     else if (m === "Other" && one(k("matl"))) lines.push(sent(one(k("matl")) + " restoration placed"));
     const occ = S[k("occ")];
@@ -512,7 +560,6 @@ function buildNote(){
   if (S.postBase) p.push(sent(ft("postBase", POST_BASE)));
   if (pulp && S.postPulp) p.push(sent(ft("postPulp", POST_PULP)));
   if (gic && S.postGic) p.push(sent(ft("postGic", POST_GIC)));
-  if (gic) many("gicOpts", GIC_OPTS).forEach(o => p.push(sent(o)));
   if (comp && S.postComp) p.push(sent(ft("postComp", POST_COMP)));
   if ((S.postExtra || "").trim()) p.push(sent(S.postExtra));
   if (p.length > 1) out.push(p.join("\n"));
@@ -531,17 +578,19 @@ function renderNote(){
   $("note").textContent = txt || "Your note builds here as you tap.";
 }
 function render(){
+  NEED = []; REQ_KEYS = new Set();
   const f = $("form");
   const add = el("button", { type: "button", class: "add", onclick(){ const id = newRest(); R.push(id); render(); toast("Restoration added"); } }, "+ Add another restoration");
   f.replaceChildren(apptSection(), laSection(), ...R.map(restSection), add, postSection(), endSection());
-  renderNote();
+  renderNote(); showNeed();
   if (pendingFocus){ const i = f.querySelector('[data-key="' + pendingFocus + '"]'); if (i) i.focus(); pendingFocus = null; }
 }
 
 /* ---------- actions ---------- */
 let tt;
-function toast(msg){ const t = $("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(tt); tt = setTimeout(() => t.classList.remove("show"), 1600); }
+function toast(msg, ms){ const t = $("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(tt); tt = setTimeout(() => t.classList.remove("show"), ms || 1600); }
 async function copyNote(){
+  if (!needCheck()) return;
   const txt = buildNote();
   if (!txt){ toast("Nothing to copy yet"); return; }
   let ok = false;

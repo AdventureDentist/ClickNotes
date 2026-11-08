@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Dental notes</title>
+<title>Treatment Notes</title>
 <style>
 :root{--paper:#EEF1F0;--surface:#FFFFFF;--ink:#1C2A30;--muted:#5E6E75;--line:#D3DCDB;--accent:#1F6470;--accent-ink:#FFFFFF;--ok:#2F6B3B;
   --sans:"Segoe UI Variable Text","Segoe UI",-apple-system,BlinkMacSystemFont,system-ui,sans-serif;color-scheme:light;box-sizing:border-box}
@@ -17,6 +17,11 @@ nav strong{margin-right:14px;font-size:.95rem;white-space:nowrap}
 .beta{font-weight:400;color:var(--muted);font-size:.85rem}
 .tab{border:0;background:none;font:inherit;font-size:.95rem;color:var(--muted);padding:10px 14px 11px;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap}
 .tab.right{margin-left:auto}
+.tab.cog{display:inline-flex;align-items:center;padding:9px 10px 10px}
+.coffee{margin-left:6px;padding:6px 12px;border:1px solid var(--line);border-radius:999px;color:var(--muted);font-size:.85rem;text-decoration:none;white-space:nowrap;align-self:center;margin-bottom:4px}
+.coffee:hover{color:var(--ink);border-color:var(--muted)}
+.coffee:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+@media (max-width:1100px){nav .coffee .lbl{display:none}}
 .tab:hover{color:var(--ink)}
 .tab[aria-selected="true"]{color:var(--ink);font-weight:700;border-bottom-color:var(--accent)}
 .tab:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
@@ -32,6 +37,18 @@ iframe.on{display:block}
 .card small{display:block;color:var(--muted);font-weight:400;margin-top:2px}
 .card input,.card textarea{width:100%;font:inherit;color:inherit;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 11px;margin-bottom:18px}
 .card textarea{min-height:110px;resize:vertical}
+.sect{margin-top:34px;padding-top:24px;border-top:1px solid var(--line)}
+.card h2{margin:0 0 6px;font-size:1.15rem}
+.card h1 + h2{margin-top:18px}
+.card h3{margin:18px 0 6px;font-size:.98rem}
+.card ul.help{margin:0 0 14px;padding-left:20px;list-style:disc}
+.card ul.help li{margin:0 0 8px;line-height:1.45}
+.card ul.help li::marker{color:var(--muted)}
+.card ol.steps{margin:0 0 14px;padding-left:22px;list-style:decimal}
+.card ol.steps li{margin:0 0 8px;line-height:1.45}
+kbd{font-family:inherit;font-size:.85em;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:0 5px;background:var(--surface)}
+.card code{font-size:.85em;overflow-wrap:anywhere}
+.coffee.big{display:inline-block;margin:0;padding:9px 16px;font-size:.95rem;color:var(--ink)}
 .card button{font:inherit;border-radius:8px;padding:10px 16px;cursor:pointer}
 .save{background:var(--accent);color:var(--accent-ink);border:1px solid var(--accent);font-weight:700}
 .reset{background:var(--surface);color:var(--ink);border:1px solid var(--line);margin-left:8px}
@@ -39,22 +56,80 @@ iframe.on{display:block}
 </style>
 </head>
 <body>
-<nav role="tablist" aria-label="Note templates"><strong>Dental notes <span class="beta">(beta)</span></strong><button type="button" class="tab" data-key="filling" role="tab" aria-selected="false">Filling</button><button type="button" class="tab" data-key="extraction" role="tab" aria-selected="false">Extraction</button><button type="button" class="tab" data-key="prep" role="tab" aria-selected="false">Indirect prep</button><button type="button" class="tab" data-key="fit" role="tab" aria-selected="false">Indirect fit</button><button type="button" class="tab" data-key="endo" role="tab" aria-selected="false">Endo</button><button type="button" class="tab right" data-key="info" role="tab" aria-selected="false">Your details</button></nav>
+<nav role="tablist" aria-label="Note templates"><strong>Treatment Notes</strong><button type="button" class="tab" data-key="filling" role="tab" aria-selected="false">Restoration</button><button type="button" class="tab" data-key="extraction" role="tab" aria-selected="false">Extraction</button><button type="button" class="tab" data-key="prep" role="tab" aria-selected="false">Indirect prep</button><button type="button" class="tab" data-key="fit" role="tab" aria-selected="false">Indirect fit</button><button type="button" class="tab" data-key="endo" role="tab" aria-selected="false">Endo</button><button type="button" class="tab" data-key="denture" role="tab" aria-selected="false">Dentures</button><button type="button" class="tab right cog" data-key="info" role="tab" aria-selected="false" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><a class="coffee" href="https://buymeacoffee.com/adventuredentist" target="_blank" rel="noopener noreferrer" aria-label="Buy me a coffee" title="Buy me a coffee"><span aria-hidden="true">☕</span><span class="lbl"> Buy me a coffee</span></a>
+</nav>
 <main>
-<iframe id="f-filling" title="Filling note" allow="clipboard-write" srcdoc="{{filling}}"></iframe>
+<iframe id="f-filling" title="Restoration note" allow="clipboard-write" srcdoc="{{filling}}"></iframe>
 <iframe id="f-extraction" title="Extraction note" allow="clipboard-write" srcdoc="{{extraction}}"></iframe>
 <iframe id="f-prep" title="Indirect prep note" allow="clipboard-write" srcdoc="{{prep}}"></iframe>
 <iframe id="f-fit" title="Indirect fit note" allow="clipboard-write" srcdoc="{{fit}}"></iframe>
 <iframe id="f-endo" title="Endo note" allow="clipboard-write" srcdoc="{{endo}}"></iframe>
-<section id="p-info" aria-label="Your details">
+<iframe id="f-denture" title="Denture note" allow="clipboard-write" srcdoc="{{denture}}"></iframe>
+<section id="p-info" aria-label="Settings">
   <div class="card">
-    <h1>Your details</h1>
-    <p>The dentist and dental assistant names are used across every template. They’re saved in this browser on this computer only, so each person sharing the file can set their own.</p>
-    <label for="clin">Dentist name <small>Shown as the Clinician line in every note.</small></label>
+    <h1>Settings</h1>
+    <h2>Your details</h2>
+    <p>The clinician and dental assistant names are used across every template. They’re saved in this browser on this computer only, so each person sharing the file can set their own.</p>
+    <label for="clin">Clinician name <small>For dentists, hygienists and therapists. Shown as the Clinician line in every note.</small></label>
     <input id="clin" type="text" autocomplete="off" placeholder="e.g. Dr Alex Smith">
     <label for="das">Dental assistant names <small>One per line. The first name is selected by default, and you can still pick Other in any note.</small></label>
     <textarea id="das" placeholder="e.g. Sam"></textarea>
     <button type="button" class="save" id="save">Save details</button><button type="button" class="reset" id="reset">Clear details</button><span class="status" id="status" role="status"></span>
+  </div>
+  <div class="card sect">
+    <h2>Making it remember your details</h2>
+    <p>Your details are saved by your web browser, not inside the file. Set them once on each computer and they’ll be there every time you open the page.</p>
+    <h3>Best set-up</h3>
+    <ul class="help">
+      <li>Use <strong>Chrome or Edge</strong>, and always open the page in the same browser on that computer.</li>
+      <li>Save the file somewhere permanent, such as your <strong>Desktop</strong> or <strong>Documents</strong>, rather than opening it from Downloads each time.</li>
+      <li>When you get a newer version, save it over the old one. Your details carry over.</li>
+    </ul>
+    <h3>Keep it one click away</h3>
+    <ul class="help">
+      <li><strong>Bookmark it:</strong> open the page and press <kbd>Ctrl</kbd> + <kbd>D</kbd> (<kbd>⌘</kbd> + <kbd>D</kbd> on a Mac).</li>
+      <li><strong>Pin the tab:</strong> right-click the page’s tab and choose <em>Pin</em>. It stays open at the left of your tabs.</li>
+      <li><strong>Open it when the browser starts:</strong> in Chrome go to Settings, then <em>On start-up</em>, then <em>Open a specific page or set of pages</em>, and add this page. In Edge it’s Settings, then <em>Start, home and new tabs</em>. Copy the page address from the address bar; it starts with <code>file:///</code>.</li>
+      <li><strong>Desktop shortcut (Windows):</strong> right-click the file, choose <em>Show more options</em>, then <em>Send to</em>, then <em>Desktop (create shortcut)</em>.</li>
+    </ul>
+    <h3>Things that make it forget</h3>
+    <ul class="help">
+      <li>Private, Incognito or InPrivate windows.</li>
+      <li>Clearing browsing data with <em>Cookies and other site data</em> ticked.</li>
+      <li>Opening the page in a different browser, browser profile or computer.</li>
+    </ul>
+  </div>
+  <div class="card sect">
+    <h2>Defaults in each note</h2>
+    <ul class="help">
+      <li>Your clinician name fills the Clinician line, and the first dental assistant listed is selected by default.</li>
+      <li>Common choices start selected, such as Articaine 4% 1:100,000, 1.8ml cartridges, C/O Nil and MH no changes. Tap a different option to change it for that note.</li>
+      <li>Double-click any option or sentence to reword it for the current note.</li>
+      <li>Nothing about patients is ever saved. Closing the page or pressing <em>New note</em> clears the note.</li>
+    </ul>
+  </div>
+  <div class="card sect">
+    <h2>About this tool</h2>
+    <p>Treatment Notes is a free, tap-through note builder for dental appointments: restorations, extractions, indirect preps and fits, endo and dentures. Tap the options that match what you did and it writes a clear, consistently structured clinical note, ready to paste into your practice management software.</p>
+    <h3>Why use it</h3>
+    <ul class="help">
+      <li><strong>Free.</strong> No subscription, login or per-clinician licence.</li>
+      <li><strong>Fast and consistent.</strong> Every note follows the same structure, with risks, consent and post-op advice as tick boxes so nothing gets missed.</li>
+      <li><strong>Private by design.</strong> It runs entirely in your browser from a single file. Nothing about patients is saved or sent anywhere, and closing the page clears the note.</li>
+      <li><strong>Works offline.</strong> No internet connection, server or account needed, so it keeps working if the network drops.</li>
+      <li><strong>Fully editable.</strong> It’s one plain HTML file, so you can change any option, sentence or default to suit how you work, with help from an AI assistant such as Claude.</li>
+    </ul>
+    <h3>Changing the options with Claude</h3>
+    <ol class="steps">
+      <li>Go to <strong>claude.ai</strong> and start a new chat.</li>
+      <li>Attach your Treatment Notes HTML file.</li>
+      <li>Describe the change in plain words, for example: <em>“In the Extraction tab, add Coronectomy to the method options, and make Lidocaine 2% the default anaesthetic in every tab.”</em></li>
+      <li>Ask Claude to make the change in the file and give you back the complete updated file to download. The option lists sit near the top of each tab’s script, which makes them easy to find.</li>
+      <li>Save the new file over your old one and open it to check. Your details carry over.</li>
+    </ol>
+    <p>Keep a copy of the old file until you’ve checked the new one, and make one or two changes at a time.</p>
+    <p>If it saves you time, a coffee is much appreciated.</p>
+    <a class="coffee big" href="https://buymeacoffee.com/adventuredentist" target="_blank" rel="noopener noreferrer">☕ Buy me a coffee</a>
   </div>
 </section>
 </main>
@@ -78,18 +153,19 @@ iframe.on{display:block}
   document.getElementById("reset").onclick = () => save({ clinician: DEF.clinician, das: DEF.das.slice() }, "Cleared");
   fill();
 
-  const keys = ['filling', 'extraction', 'prep', 'fit', 'endo', 'info'];
+  const keys = ['filling', 'extraction', 'prep', 'fit', 'endo', 'denture', 'info'];
   function show(k){
     if (!keys.includes(k)) k = keys[0];
     document.querySelectorAll(".tab").forEach(t => t.setAttribute("aria-selected", String(t.dataset.key === k)));
     document.querySelectorAll("iframe").forEach(f => f.classList.toggle("on", f.id === "f-" + k));
     document.getElementById("p-info").classList.toggle("on", k === "info");
-    document.title = document.querySelector('.tab[data-key="' + k + '"]').textContent + " · Dental notes";
+    const tb = document.querySelector('.tab[data-key="' + k + '"]');
+    document.title = (tb.getAttribute("aria-label") || tb.textContent) + " · Treatment Notes";
     try { if (location.hash !== "#" + k) history.replaceState(null, "", "#" + k); } catch(e){ /* previews that block history changes: tabs still work */ }
   }
   document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => show(t.dataset.key)));
   window.addEventListener("hashchange", () => show(location.hash.slice(1)));
-  document.addEventListener("keydown", e => { if (e.altKey && /^[1-5]$/.test(e.key)){ e.preventDefault(); show(keys[+e.key - 1]); } });
+  document.addEventListener("keydown", e => { if (e.altKey && /^[1-6]$/.test(e.key)){ e.preventDefault(); show(keys[+e.key - 1]); } });
   show(firstRun && !window.DN_SETTINGS.clinician ? "info" : location.hash.slice(1));
 })();
 </script>

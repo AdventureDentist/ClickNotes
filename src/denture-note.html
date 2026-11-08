@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en-NZ">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Denture note</title>
+<style>
+:root{
+  --paper:#EEF1F0; --surface:#FFFFFF; --ink:#1C2A30; --muted:#5E6E75; --line:#D3DCDB;
+  --accent:#1F6470; --accent-ink:#FFFFFF; --chip:#E2EBEA; --branch:#9DB8B5;
+  --enamel:#EFE2C4; --enamel-ink:#3B2F18; --enamel-edge:#C9B48A; --ok:#2F6B3B;
+  --sans:"Segoe UI Variable Text","Segoe UI",-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+  --mono:"Cascadia Mono",Consolas,"SF Mono",Menlo,ui-monospace,monospace;
+  color-scheme:light; box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#121A1D; --surface:#19242A; --ink:#E3EBEB; --muted:#93A4AA; --line:#2D3D44;
+    --accent:#6FC2C6; --accent-ink:#0E1B1E; --chip:#243439; --branch:#3F5F62;
+    --enamel:#D9C9A3; --enamel-ink:#2B2312; --enamel-edge:#A48E62; --ok:#8DCB97; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#121A1D; --surface:#19242A; --ink:#E3EBEB; --muted:#93A4AA; --line:#2D3D44;
+  --accent:#6FC2C6; --accent-ink:#0E1B1E; --chip:#243439; --branch:#3F5F62;
+  --enamel:#D9C9A3; --enamel-ink:#2B2312; --enamel-edge:#A48E62; --ok:#8DCB97; color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.4}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+.app{display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,420px);max-width:1440px;margin:0 auto;min-height:100vh}
+main{padding:22px 28px 140px;min-width:0}
+.top{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;margin:0 0 18px}
+.top h1{white-space:nowrap}
+.top h1{margin:0;font-size:1.55rem;letter-spacing:-.01em}
+.top p{margin:0;color:var(--muted);font-size:.9rem}
+
+/* sections */
+.sec{border-top:2px solid var(--ink);margin-top:22px}
+.sec:first-of-type{margin-top:0}
+.sec-h{display:flex;align-items:center;gap:10px;width:100%;background:none;border:0;padding:10px 0 8px;text-align:left}
+.sec-h h2{margin:0;font-size:1.08rem;font-weight:700}
+.sec-h .chev{margin-left:auto;color:var(--muted);font-size:.85rem}
+.sec-h .sum{color:var(--muted);font-size:.85rem;font-weight:400}
+.sec-b{padding-bottom:6px}
+.rest-h{display:flex;align-items:center;gap:10px}
+.rest-h .remove{margin-left:auto;background:none;border:1px solid var(--line);border-radius:6px;padding:4px 10px;font-size:.82rem;color:var(--muted)}
+.rest-h .remove:hover{color:var(--ink);border-color:var(--muted)}
+.tag{font-family:var(--mono);font-size:.95rem;background:var(--enamel);color:var(--enamel-ink);border:1px solid var(--enamel-edge);border-radius:5px;padding:1px 7px}
+
+.row{display:grid;grid-template-columns:168px minmax(0,1fr);gap:4px 14px;padding:7px 0;align-items:start}
+.lab{font-weight:600;font-size:.9rem;padding-top:6px}
+.lab small{display:block;font-weight:400;color:var(--muted);font-size:.78rem}
+.chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chip{border:1px solid transparent;background:var(--chip);border-radius:999px;padding:6px 12px;font-size:.88rem;line-height:1.25;text-align:left;max-width:100%}
+.chip:hover{border-color:var(--line)}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.multi .chip[aria-pressed="true"]::before{content:"✓ ";font-weight:700}
+.txt{border:1px solid var(--line);background:var(--surface);border-radius:7px;padding:7px 10px;width:100%;max-width:440px}
+.txt.other{max-width:280px;flex:1 1 200px}
+textarea.txt{min-height:64px;resize:vertical;max-width:560px}
+
+/* linked options — the branch */
+.branch{margin:2px 0 4px 8px;padding-left:18px;border-left:2px solid var(--branch);position:relative}
+.branch > .row{position:relative}
+.branch > .row::before{content:"";position:absolute;left:-18px;top:17px;width:12px;border-top:2px solid var(--branch)}
+
+.fixed{display:flex;gap:10px;align-items:flex-start;padding:8px 0;cursor:pointer;max-width:720px}
+.fixed input{margin-top:3px;width:17px;height:17px;accent-color:var(--accent);flex:none}
+.fixed span{font-size:.92rem}
+.fixed.off span{color:var(--muted);text-decoration:line-through}
+.fixed textarea{flex:1;min-height:60px}
+.edited{text-decoration:underline dotted;text-underline-offset:3px}
+.chip-edit{width:auto;min-width:220px;max-width:100%;flex:1 1 260px;border-color:var(--accent)}
+.tick{display:inline-flex;gap:7px;align-items:center;background:var(--chip);border-radius:999px;padding:5px 12px 5px 9px;font-size:.88rem;cursor:pointer}
+.tick input{width:16px;height:16px;accent-color:var(--accent);margin:0}
+
+/* tooth picker */
+.arch{display:inline-grid;gap:3px;padding:8px;background:var(--surface);border:1px solid var(--line);border-radius:10px;max-width:100%;overflow-x:auto}
+.arch .r{display:flex;gap:3px;align-items:center}
+.arch .r.up{padding-bottom:4px;border-bottom:2px solid var(--ink)}
+.arch .mid{width:2px;align-self:stretch;background:var(--ink);margin:0 4px}
+.tooth{width:32px;height:32px;flex:none;border:1px solid var(--line);background:var(--paper);border-radius:7px 7px 9px 9px;font-family:var(--mono);font-size:.8rem;padding:0}
+.tooth:hover{border-color:var(--muted)}
+.tooth[aria-pressed="true"]{background:var(--enamel);color:var(--enamel-ink);border-color:var(--enamel-edge);font-weight:700}
+.arch-tools{display:flex;gap:14px;margin-top:5px;font-size:.84rem}
+.link{background:none;border:0;padding:0;color:var(--muted);text-decoration:underline;text-underline-offset:2px}
+.link:hover{color:var(--ink)}
+
+.add{margin-top:16px;border:1px dashed var(--muted);background:none;border-radius:8px;padding:10px 16px;color:var(--ink)}
+.add:hover{background:var(--surface)}
+
+/* note */
+aside{background:var(--surface);border-left:1px solid var(--line);padding:22px 20px;position:sticky;top:env(safe-area-inset-top,0px);height:100vh;display:flex;flex-direction:column;gap:10px}
+.note-h{display:flex;align-items:center;gap:8px}
+.note-h h2{margin:0;font-size:1.05rem;margin-right:auto}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:9px 14px}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+#note{flex:1;overflow:auto;margin:0;white-space:pre-wrap;font-family:var(--mono);font-size:.83rem;line-height:1.6;background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:14px 16px}
+.hint{margin:0;font-size:.8rem;color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(16px);opacity:0;background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:8px;font-size:.9rem;transition:opacity .16s,transform .16s;pointer-events:none;z-index:40}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.mbar{display:none}
+
+@media (max-width:900px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  aside{position:static;height:auto;border-left:0;border-top:1px solid var(--line);padding-bottom:110px}
+  #note{min-height:260px}
+  .row{grid-template-columns:minmax(0,1fr)}
+  .lab{padding-top:0}
+  main{padding:16px 14px 40px}
+  .mbar{display:flex;gap:8px;position:fixed;left:0;right:0;bottom:0;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));background:var(--surface);border-top:1px solid var(--line);z-index:30}
+  .mbar .btn{flex:1}
+  .tooth{width:28px;height:30px;font-size:.74rem}
+}
+.per-tooth{margin:14px 0 4px;padding:6px 0 2px 14px;border-left:3px solid var(--enamel-edge)}
+.per-tooth h3{margin:0 0 4px;font-size:1rem}
+@media (prefers-reduced-motion: reduce){.toast{transition:none}}
+/* follow-ups still to fill */
+.row.need > .lab{color:#9A5B00}
+.row.need > .lab::after{content:"needed";display:inline-block;margin-left:6px;padding:0 6px;border-radius:999px;background:#FBE7C6;color:#7A4700;font-size:.72rem;font-weight:600;vertical-align:1px}
+.need-box{border:1px solid #E7C38A;background:#FDF4E4;color:#5E3B00;border-radius:9px;padding:8px 11px;font-size:.84rem;line-height:1.5}
+.need-box b{font-weight:700}
+.need-box button{background:none;border:0;padding:0;color:inherit;text-decoration:underline;text-underline-offset:2px;font-size:inherit}
+.row.flash{animation:needflash 1.2s ease-out}
+@keyframes needflash{0%{background:#FBE7C6}100%{background:transparent}}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .row.need > .lab{color:#F2B25C}:root:not([data-theme="light"]) .row.need > .lab::after{background:#4A3410;color:#F6CF8F}:root:not([data-theme="light"]) .need-box{background:#2E2410;border-color:#6B5221;color:#F6DDB0}}
+:root[data-theme="dark"] .row.need > .lab{color:#F2B25C}:root[data-theme="dark"] .row.need > .lab::after{background:#4A3410;color:#F6CF8F}:root[data-theme="dark"] .need-box{background:#2E2410;border-color:#6B5221;color:#F6DDB0}
+@media (prefers-reduced-motion: reduce){.row.flash{animation:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <main>
+    <div class="top"><h1>Denture note</h1><p>Tap through the appointment, then copy the note. Double-click any option or sentence to change its wording.</p></div>
+    <div id="form"></div>
+  </main>
+  <aside aria-labelledby="noteTitle">
+    <div class="note-h">
+      <h2 id="noteTitle">Note</h2>
+      <button class="btn" id="newBtn">New note</button>
+      <button class="btn primary" id="copyBtn">Copy note</button>
+    </div>
+    <pre id="note" aria-live="polite"></pre>
+    <p class="hint">Ctrl + Enter copies the note. Nothing is saved, so closing the page clears it.</p>
+  </aside>
+</div>
+<div class="mbar">
+  <button class="btn" id="mNew">New note</button>
+  <button class="btn" id="mView">View note</button>
+  <button class="btn primary" id="mCopy">Copy note</button>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+"use strict";
+const DEF_CLIN = "", DEF_DAS = [];
+function dnSettings(){
+  try { if (window.parent && window.parent !== window && window.parent.DN_SETTINGS) return window.parent.DN_SETTINGS; } catch(e){}
+  try { return JSON.parse(localStorage.getItem("dentalnotes.settings") || "null") || {}; } catch(e){ return {}; }
+}
+let CLINICIAN = DEF_CLIN, DA_LIST = DEF_DAS.concat("Other");
+function defaultDA(){ return DA_LIST[0] === "Other" ? "" : DA_LIST[0]; }
+function loadSettings(){
+  const s = dnSettings();
+  CLINICIAN = s.clinician ? s.clinician : DEF_CLIN;
+  DA_LIST = (s.das && s.das.length ? s.das : DEF_DAS).concat("Other");
+}
+loadSettings();
+const CO_LIST = ["Nil","Other"];
+/* ---------- denture options (edit these to change the buttons) ---------- */
+const MH_LIST = ["No changes","Changes updated","Other"];
+const CONSENT_TEXT = "Verbal consent given to proceed.";
+const ARCHES = ["Upper","Lower","Upper and lower"];
+const D_TYPES = ["Complete acrylic","Complete digital","Partial acrylic","Partial cobalt chrome","Partial flexible","Other"];
+// expectations: tick sentences. The lower, clasp and immediate ones only show when they apply.
+const PROSTH_TEXT = "Explained that a denture is not a replacement for teeth, it is a replacement for no teeth. It is similar to a prosthetic arm or leg, will need a period of adaptation, and will never match the function or appearance of natural teeth.";
+const EXPECT_TEXT = "Also discussed: reduced chewing power, starting with soft foods and chewing evenly on both sides at the back; speech changes, bulkiness and extra saliva at first; sore spots to be expected at first; gum and bone shrinkage over time, so relines or replacement will be needed; daily cleaning with a non-abrasive cleaner (not toothpaste) and leaving out at night.";
+const LOWER_TEXT = "Advised that lower dentures are harder to keep stable than uppers.";
+const CLASP_TEXT = "Advised that clasps may be visible.";
+const IMM_EXPECT_TEXT = "Advised that a reline is likely within 3 to 6 months as the gums heal.";
+const PREV_TEXT = "Expectations of dentures discussed last time.";
+const FIRST_STAGES = ["3D scan","Primary impressions","Fit"];
+/* "discussed last time" ticks itself when none of the selected stages is a first-discussion stage; a manual tick or untick sticks until the stages change that */
+function syncPrev(){
+  const st = S.stages || [];
+  const auto = st.length > 0 && !st.some(s => FIRST_STAGES.includes(s));
+  if (S.prevDisc === S.prevAuto) S.prevDisc = auto;
+  S.prevAuto = auto;
+}
+const hasLower = () => S.arch === "Lower" || S.arch === "Upper and lower";
+function expectRows(){
+  if (S.prevDisc) return [ fixed("prevDisc", PREV_TEXT) ];
+  return [ fixed("prevDisc", PREV_TEXT), fixed("prosth", PROSTH_TEXT), fixed("expect", EXPECT_TEXT),
+    hasLower() ? fixed("lowerTxt", LOWER_TEXT) : null, isPartial() ? fixed("claspTxt", CLASP_TEXT) : null, S.imm ? fixed("immExp", IMM_EXPECT_TEXT) : null ].filter(Boolean);
+}
+function expectLines(){
+  if (S.prevDisc) return [ fixedLine("prevDisc", PREV_TEXT) ];
+  return [ fixedLine("prosth", PROSTH_TEXT), fixedLine("expect", EXPECT_TEXT),
+    hasLower() ? fixedLine("lowerTxt", LOWER_TEXT) : "", isPartial() ? fixedLine("claspTxt", CLASP_TEXT) : "", S.imm ? fixedLine("immExp", IMM_EXPECT_TEXT) : "" ];
+}
+const STAGES = ["3D scan","Primary impressions","Secondary impressions","Bite registration","Try-in","Fit","Review","Addition or repair","Reline"];
+
+// 3D scan (digital dentures)
+const SCANS = ["Intraoral scan taken","Existing denture scanned","Bite registration scanned","Other"];
+const SCAN_TEXT = "Scans checked for detail and sent to the lab.";
+
+// impressions
+const TRAYS = ["Stock tray","Special tray","Other"];
+const IMP_MAT = ["Alginate","Light and heavy body silicone","Putty and light body silicone","Polyether","Other"];
+const OPPOSING = ["Impression taken","Not required","Other"];
+const BORDER_TEXT = "Borders moulded with greenstick compound.";
+const IMP_TEXT = "Impressions checked for detail and disinfected before sending to the lab.";
+
+// bite registration
+const RIMS_TEXT = "Wax rims tried in and adjusted for lip support, occlusal plane and OVD, leaving 2 to 4 mm freeway space.";
+const JAW = ["RCP","ICP","Other"];
+const REG_MAT = ["Bite registration silicone","Wax","Other"];
+const LINES_TEXT = "Centre line, smile line and canine lines marked on the rims.";
+const SHADES = ["A1","A2","A3","A3.5","B2","Other"];
+
+// try-in
+const TRY_CHECKS = ["Fit","Occlusion","OVD","Aesthetics","Speech","Centre line"];
+const TRY_HAPPY = ["Patient happy with appearance - shown in mirror","Patient happy with appearance","Changes requested","Other"];
+const TRY_NEXT = ["Sent to lab to finish","Re-try-in needed","Other"];
+
+// fit
+const FIT_CHECKS = ["Fit","Retention","Stability","Occlusion","Aesthetics","Speech"];
+const PIP_TEXT = "Fitting surface checked with pressure indicating paste.";
+const ADJUST = ["Nil required","Pressure areas eased","Occlusal adjustment","Flange reduced","Clasps adjusted","Other"];
+const FIT_HAPPY = ["Patient happy with fit and appearance - shown in mirror","Patient happy with fit and appearance","Other"];
+const CARE_TEXT = "Denture care explained: take out after meals to rinse, brush daily with a soft brush and mild soap or denture cleaner (not toothpaste), and keep in water when out of the mouth.";
+const NIGHT_TEXT = "Advised to leave the denture out overnight to let the gums rest.";
+const ADAPT_TEXT = "Explained that eating and speaking take time to get used to, starting with soft food cut into small pieces.";
+const SORE_TEXT = "Advised that sore spots are common in the first few weeks and to come back for easing, wearing the denture for a few hours beforehand so the sore areas show.";
+const PARTIAL_TEXT = "Advised that a partial denture can trap plaque, so the remaining teeth need careful cleaning to reduce the risk of decay and gum disease.";
+const IMM_SHRINK_TEXT = "Explained that the gums shrink as the sockets heal, so the denture is likely to loosen and need a reline or replacement within 3 to 6 months.";
+const REVIEW_WHEN = ["1 week","2 weeks","As needed","Other"];
+
+// review
+const COMPLAINTS = ["Nil","Sore spots","Loose","Difficulty eating","Speech","Gagging","Other"];
+const REV_OUT = ["Patient comfortable after adjustment","Further review needed","Other"];
+
+// addition or repair
+const REPAIRS = ["Tooth addition","Clasp addition","Fracture repair","Other"];
+const REPAIR_IMP_TEXT = "Alginate impression taken with the denture in place for the lab.";
+
+// lab and next appointment (add your labs to LABS)
+const LABS = ["Other"];
+const NEXT = ["Secondary impressions","Bite registration","Try-in","Fit","Review","Other"];
+
+// reline
+const RELINES = ["Chairside soft reline","Chairside hard reline","Lab reline","Lab rebase","Other"];
+const RELINE_IMP_TEXT = "Impression taken in the fitting surface of the denture (closed mouth) for the lab.";
+
+let S = {}, pendingFocus = null;
+const collapsed = {};
+function fresh(){
+  S = { lbl: {}, txt: {}, clin: CLINICIAN, da: defaultDA(), co: "Nil", mh: "No changes", consent: true, prevDisc: false, prevAuto: false, prosth: true, expect: true, lowerTxt: true, claspTxt: true, immExp: true,
+    "pi.tray": "Stock tray", "pi.mat": "Alginate", "pi.imp": true,
+    "si.tray": "Special tray", "si.mat": "Light and heavy body silicone", "si.imp": true,
+    rims: true, lines: true, jaw: "RCP", regmat: "Bite registration silicone",
+    trychk: ["Fit","Occlusion","OVD","Aesthetics","Speech"],
+    fitchk: ["Fit","Retention","Stability","Occlusion"], pip: true,
+    care: true, night: true, adapt: true, sore: true, partial: true, shrink: true,
+    repimp: true, relimp: true, scantxt: true,
+    scans: ["Intraoral scan taken","Bite registration scanned"] };
+}
+/* ---------- helpers ---------- */
+const $ = id => document.getElementById(id);
+function el(tag, attrs, ...kids){
+  const n = document.createElement(tag);
+  if (attrs) for (const k in attrs){
+    const v = attrs[k];
+    if (k === "class") n.className = v;
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+    else if (v !== false && v != null) n.setAttribute(k, v);
+  }
+  for (const c of kids) if (c != null && c !== false) n.append(c);
+  return n;
+}
+function has(k, v){ const x = S[k]; return Array.isArray(x) ? x.includes(v) : x === v; }
+function lab(k, o){ const v = S.lbl[k + "|" + o]; return v != null ? v : o; }
+function ft(k, def){ const v = S.txt[k]; return v != null ? v : def; }
+function one(k){ const v = S[k]; if (!v) return ""; return v === "Other" ? (S[k + "~o"] || "").trim() : lab(k, v); }
+function many(k, opts){
+  const a = S[k] || [];
+  return opts.filter(o => a.includes(o)).map(o => o === "Other" ? (S[k + "~o"] || "").trim() : lab(k, o)).filter(Boolean);
+}
+function andList(a){ return a.length < 2 ? (a[0] || "") : a.slice(0, -1).join(", ") + " and " + a[a.length - 1]; }
+function sent(s){ s = (s || "").trim(); if (!s) return ""; s = s.charAt(0).toUpperCase() + s.slice(1); return /[.!?]$/.test(s) ? s : s + "."; }
+
+/* ---------- UI builders ---------- */
+let lastClick = { id: null, t: 0, prev: null }, editing = null;
+function chips(k, opts, multi){
+  const wrap = el("div", { class: "chips" + (multi ? " multi" : ""), role: "group" });
+  opts.forEach(o => {
+    const id = k + "|" + o;
+    const on = multi ? (S[k] || []).includes(o) : S[k] === o;
+    if (editing === id){
+      const inp = el("input", { type: "text", class: "txt chip-edit", value: lab(k, o), "data-key": "edit:" + id, "aria-label": "Edit option text",
+        onkeydown(e){ if (e.key === "Enter"){ e.preventDefault(); e.target.blur(); } if (e.key === "Escape"){ editing = null; render(); } },
+        onblur(e){ if (editing !== id) return; const v = e.target.value.trim(); if (!v || v === o) delete S.lbl[id]; else S.lbl[id] = v;
+          if (!on){ if (multi) S[k] = (S[k] || []).concat(o); else S[k] = o; } editing = null; render(); } });
+      wrap.append(inp); return;
+    }
+    wrap.append(el("button", { type: "button", class: "chip" + (S.lbl[id] != null ? " edited" : ""), "aria-pressed": String(on),
+      title: o === "Other" ? "" : "Double-click to edit the wording", onclick(){
+      const now = Date.now();
+      if (o !== "Other" && lastClick.id === id && now - lastClick.t < 400){
+        S[k] = lastClick.prev; lastClick = { id: null, t: 0, prev: null };
+        editing = id; pendingFocus = "edit:" + id; render(); return;
+      }
+      lastClick = { id, t: now, prev: Array.isArray(S[k]) ? S[k].slice() : S[k] };
+      if (multi){ const a = (S[k] || []).slice(); const i = a.indexOf(o); i >= 0 ? a.splice(i, 1) : a.push(o); S[k] = a; }
+      else S[k] = S[k] === o ? "" : o;
+      if (o === "Other" && has(k, "Other")) pendingFocus = k + "~o";
+      render();
+    }}, lab(k, o)));
+  });
+  if (has(k, "Other")) wrap.append(textInput(k + "~o", "Type here", "txt other"));
+  return wrap;
+}
+function textInput(k, ph, cls){
+  return el("input", { type: "text", class: cls || "txt", placeholder: ph || "", value: S[k] || "", "data-key": k, autocomplete: "off",
+    oninput(e){ const was = filled(k); S[k] = e.target.value;
+      if (REQ_KEYS.has(k) && was !== filled(k)){ pendingFocus = k; render(); const n = document.querySelector('[data-key="' + k + '"]'); if (n) n.setSelectionRange(n.value.length, n.value.length); }
+      else renderNote(); } });
+}
+function textArea(k, ph){
+  const t = el("textarea", { class: "txt", placeholder: ph || "", "data-key": k, oninput(e){ S[k] = e.target.value; renderNote(); } });
+  t.value = S[k] || ""; return t;
+}
+function row(label, ctrl, hint){ return el("div", { class: "row" }, el("div", { class: "lab" }, label, hint ? el("small", null, hint) : null), el("div", null, ctrl)); }
+/* ---------- follow-ups still to fill: req() rows are flagged while empty, and Copy asks once first ---------- */
+let NEED = [], REQ_KEYS = new Set(), warnedAt = 0;
+function filled(k){
+  const v = S[k], oth = () => !!(S[k + "~o"] || "").trim();
+  if (Array.isArray(v)) return v.some(x => x !== "Other") || (v.includes("Other") && oth());
+  if (v === "Other") return oth();
+  return v != null && v !== false && String(v).trim() !== "";
+}
+function req(label, k, ctrl, hint, name){
+  const r = row(label, ctrl, hint);
+  REQ_KEYS.add(k);
+  if (!filled(k)){ r.classList.add("need"); NEED.push({ name: name || label, el: r }); }
+  return r;
+}
+function showNeed(){
+  let box = $("needBox");
+  if (!box){ box = el("div", { id: "needBox", class: "need-box", role: "status" }); $("note").parentNode.insertBefore(box, $("note")); }
+  box.hidden = !NEED.length;
+  box.replaceChildren(...(NEED.length ? [el("b", null, "Still to fill: ")] : []), ...NEED.flatMap((n, i) => [i ? ", " : "",
+    el("button", { type: "button", onclick(){ goNeed(n); } }, n.name)]));
+}
+function goNeed(n){
+  n.el.scrollIntoView({ behavior: "smooth", block: "center" });
+  n.el.classList.remove("flash"); void n.el.offsetWidth; n.el.classList.add("flash");
+  const f = n.el.querySelector("button, input, textarea"); if (f) f.focus({ preventScroll: true });
+}
+function needCheck(){
+  if (!NEED.length || Date.now() - warnedAt < 8000){ warnedAt = 0; return true; }
+  warnedAt = Date.now();
+  toast("Still to fill: " + NEED.map(n => n.name).join(", ") + ". Press Copy again to copy anyway.", 5000);
+  goNeed(NEED[0]);
+  return false;
+}
+function branch(...rows){ return el("div", { class: "branch" }, ...rows); }
+function fixed(k, text){
+  const cb = el("input", { type: "checkbox", id: "cb-" + k, checked: S[k] ? "checked" : false, "aria-label": "Include in note", onchange(e){ S[k] = e.target.checked; render(); } });
+  if (editing === "txt:" + k){
+    const ta = el("textarea", { class: "txt", "data-key": "edit:txt:" + k, "aria-label": "Edit sentence",
+      onkeydown(e){ if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); e.target.blur(); } if (e.key === "Escape"){ editing = null; render(); } },
+      onblur(e){ if (editing !== "txt:" + k) return; const v = e.target.value.trim(); if (!v || v === text) delete S.txt[k]; else S.txt[k] = v; S[k] = true; editing = null; render(); } });
+    ta.value = ft(k, text);
+    return el("div", { class: "fixed" }, cb, ta);
+  }
+  return el("div", { class: "fixed" + (S[k] ? "" : " off") }, cb,
+    el("span", { class: S.txt[k] != null ? "edited" : "", title: "Double-click to edit the wording",
+      ondblclick(){ editing = "txt:" + k; pendingFocus = "edit:txt:" + k; render(); } }, ft(k, text)));
+}
+function tick(k, text){
+  return el("label", { class: "tick" }, el("input", { type: "checkbox", checked: S[k] ? "checked" : false, onchange(e){ S[k] = e.target.checked; render(); } }), el("span", null, text));
+}
+function section(key, title, body, extraHead){
+  const isCol = !!collapsed[key];
+  const head = el("button", { type: "button", class: "sec-h", "aria-expanded": String(!isCol), onclick(){ collapsed[key] = !isCol; render(); } },
+    el("h2", null, title), extraHead || null, el("span", { class: "chev", "aria-hidden": "true" }, isCol ? "Show" : "Hide"));
+  return el("section", { class: "sec" }, head, isCol ? null : el("div", { class: "sec-b" }, ...body));
+}
+
+const lc = x => x && /^[A-Z][a-z]/.test(x) ? x.charAt(0).toLowerCase() + x.slice(1) : x;
+function teethMulti(k){
+  const set = new Set(S[k] || []);
+  const prim = !!S[k + ".prim"];
+  const q = prim ? [[55,54,53,52,51],[61,62,63,64,65],[85,84,83,82,81],[71,72,73,74,75]]
+                 : [[18,17,16,15,14,13,12,11],[21,22,23,24,25,26,27,28],[48,47,46,45,44,43,42,41],[31,32,33,34,35,36,37,38]];
+  const b = n => el("button", { type: "button", class: "tooth", "aria-pressed": String(set.has(n)), "aria-label": "Tooth " + n, onclick(){
+    set.has(n) ? set.delete(n) : set.add(n); S[k] = Array.from(set).sort((x, y) => x - y); render(); } }, String(n));
+  const r = (a, c, cls) => el("div", { class: "r " + cls }, ...a.map(b), el("span", { class: "mid", "aria-hidden": "true" }), ...c.map(b));
+  return el("div", null,
+    el("div", { class: "arch", role: "group", "aria-label": "Teeth" }, r(q[0], q[1], "up"), r(q[2], q[3], "lo")),
+    el("div", { class: "arch-tools" },
+      el("button", { type: "button", class: "link", onclick(){ S[k + ".prim"] = !prim; render(); } }, prim ? "Show permanent teeth" : "Show primary teeth"),
+      set.size ? el("button", { type: "button", class: "link", onclick(){ S[k] = []; render(); } }, "Clear teeth") : null));
+}
+function staffRows(){ return [ row("Clinician", textInput("clin", "Clinician name")), row("DA", chips("da", DA_LIST)), row("C/O", chips("co", CO_LIST)) ]; }
+function staffLines(){
+  const a = [];
+  if (S.clin && S.clin.trim()) a.push("Clinician: " + S.clin.trim());
+  if (one("da")) a.push("DA: " + one("da"));
+  if (one("co")) a.push("C/O: " + one("co"));
+  return a;
+}
+function endSection(){
+  return section("end", "Additional notes and personal updates", [
+    row("Additional notes", textArea("extra", "Anything else for this appointment")),
+    row("Personal updates", textArea("personal", "One per line, e.g. daughter Ella starting school"), "non-clinical")
+  ]);
+}
+function endNotes(out){
+  if ((S.extra || "").trim()) out.push("** Additional Notes **\n" + S.extra.trim());
+  const pu = (S.personal || "").split("\n").map(x => x.trim()).filter(Boolean);
+  if (pu.length) out.push("** Personal Updates **\n" + pu.map(x => "- " + x.replace(/^[-•]\s*/, "")).join("\n"));
+}
+function fixedLine(k, def){ return S[k] ? sent(ft(k, def)) : ""; }
+function renderNote(){ $("note").textContent = buildNote() || "Your note builds here as you tap."; }
+/* ---------- denture sections ---------- */
+const stageOn = s => (S.stages || []).includes(s);
+function archList(){ return S.arch === "Upper and lower" ? ["Upper","Lower"] : S.arch ? [S.arch] : []; }
+function typeKey(a){ return a === "Upper" ? "typeU" : "typeL"; }
+function isPartial(){ return archList().some(a => String(S[typeKey(a)] || "").startsWith("Partial")); }
+function archLc(){ return S.arch ? one("arch").toLowerCase() : ""; }
+
+function apptSection(){
+  syncPrev();
+  const body = [ ...staffRows(), row("MH", chips("mh", MH_LIST)),
+    req("Arch", "arch", chips("arch", ARCHES)) ];
+  const arches = archList();
+  arches.forEach(a => body.push(req(arches.length > 1 ? a + " denture" : "Denture type", typeKey(a), chips(typeKey(a), D_TYPES), null, a + " denture type")));
+  if (arches.length) body.push(row("Immediate", tick("imm", "Immediate denture (teeth still to be extracted)")));
+  if (isPartial()) body.push(req("Teeth to replace", "teeth", teethMulti("teeth"), "pick any"));
+  body.push(req("Stage", "stages", chips("stages", STAGES, true), "pick any"));
+  body.push(...expectRows());
+  body.push(fixed("consent", CONSENT_TEXT));
+  return section("appt", "Denture appointment", body);
+}
+function scanSection(){
+  return section("scan", "3D scan", [
+    row("Scanned", chips("scans", SCANS, true), "pick any"),
+    row("Tooth shade", chips("scanshade", SHADES)),
+    fixed("scantxt", SCAN_TEXT)
+  ]);
+}
+function impSection(kp, title){
+  const body = [ row("Tray", chips(kp + ".tray", TRAYS)), row("Material", chips(kp + ".mat", IMP_MAT)) ];
+  if (kp === "si") body.push(fixed("si.border", BORDER_TEXT));
+  if (S.arch && S.arch !== "Upper and lower") body.push(row("Opposing arch", chips(kp + ".opp", OPPOSING)));
+  body.push(fixed(kp + ".imp", IMP_TEXT));
+  return section(kp, title, body);
+}
+function biteSection(){
+  return section("bite", "Bite registration", [
+    fixed("rims", RIMS_TEXT),
+    row("Recorded in", chips("jaw", JAW)),
+    row("Registration material", chips("regmat", REG_MAT)),
+    fixed("lines", LINES_TEXT),
+    row("Tooth shade", chips("shade", SHADES)),
+    row("Tooth mould", textInput("mould", "e.g. lab to select"))
+  ]);
+}
+function trySection(){
+  const body = [ row("Checked", chips("trychk", TRY_CHECKS, true), "pick any"), row("Patient", chips("tryhappy", TRY_HAPPY)) ];
+  if (S.tryhappy === "Changes requested") body.push(branch(req("Changes", "trychg", textInput("trychg", "e.g. lighter shade, upper midline to the left"), null, "Changes requested")));
+  body.push(row("Next step", chips("trynext", TRY_NEXT)));
+  return section("try", "Try-in", body);
+}
+function fitSection(){
+  const body = [ row("Checked", chips("fitchk", FIT_CHECKS, true), "pick any"), fixed("pip", PIP_TEXT),
+    row("Adjustments", chips("fitadj", ADJUST, true), "pick any"), row("Patient", chips("fithappy", FIT_HAPPY)),
+    fixed("care", CARE_TEXT), fixed("night", NIGHT_TEXT), fixed("adapt", ADAPT_TEXT), fixed("sore", SORE_TEXT) ];
+  if (isPartial()) body.push(fixed("partial", PARTIAL_TEXT));
+  if (S.imm) body.push(fixed("shrink", IMM_SHRINK_TEXT));
+  body.push(row("Review", chips("fitrev", REVIEW_WHEN)));
+  return section("fit", "Fit", body);
+}
+function reviewSection(){
+  return section("rev", "Review", [
+    row("Complaints", chips("comp", COMPLAINTS, true), "pick any"),
+    row("Findings", textInput("findings", "e.g. ulcer under lower lingual flange")),
+    row("Adjustments", chips("revadj", ADJUST, true), "pick any"),
+    row("Outcome", chips("revout", REV_OUT))
+  ]);
+}
+function repairSection(){
+  const body = [ row("Work", chips("rep", REPAIRS, true), "pick any") ];
+  if (has("rep", "Tooth addition") || has("rep", "Clasp addition")) body.push(branch(req("Teeth", "repteeth", teethMulti("repteeth"), "pick any", "Teeth for addition")));
+  body.push(fixed("repimp", REPAIR_IMP_TEXT));
+  return section("repair", "Addition or repair", body);
+}
+function relineSection(){
+  const body = [ req("Type", "rel", chips("rel", RELINES), null, "Reline type") ];
+  if (S.rel === "Lab reline" || S.rel === "Lab rebase") body.push(branch(fixed("relimp", RELINE_IMP_TEXT)));
+  return section("reline", "Reline", body);
+}
+function labSection(){
+  return section("lab", "Lab and next appointment", [
+    row("Lab", chips("lab", LABS)),
+    row("Lab instructions", textArea("labNotes", "e.g. special trays, wax rims, set up to try-in")),
+    row("Next appointment", chips("next", NEXT))
+  ]);
+}
+
+/* ---------- note ---------- */
+function dentureDesc(){
+  const arches = archList();
+  const parts = arches.map(a => {
+    const ty = one(typeKey(a));
+    return a.toLowerCase() + " " + (S.imm ? "immediate " : "") + (ty ? lc(ty) + " " : "") + "denture";
+  });
+  return andList(parts);
+}
+function impLines(kp, title){
+  const l = ["** " + title + " **"];
+  const what = [lc(one(kp + ".mat")), one(kp + ".tray") ? lc(one(kp + ".tray")) : ""].filter(Boolean).join(", ");
+  if (what || S.arch) l.push("Impressions taken" + (S.arch ? " (" + archLc() + ")" : "") + (what ? ": " + what : "") + ".");
+  if (kp === "si" && S["si.border"]) l.push(sent(ft("si.border", BORDER_TEXT)));
+  if (S.arch && S.arch !== "Upper and lower" && one(kp + ".opp")) l.push("Opposing arch: " + lc(one(kp + ".opp")) + ".");
+  if (S[kp + ".imp"]) l.push(sent(ft(kp + ".imp", IMP_TEXT)));
+  return l;
+}
+function buildNote(){
+  syncPrev();
+  const out = [];
+  const a = ["** Denture Appointment **", ...staffLines()];
+  const stages = many("stages", STAGES);
+  const desc = dentureDesc();
+  if (stages.length || desc) a.push("Patient attending for " + (stages.length ? andList(stages.map(lc)) : "denture appointment") + (desc ? ": " + desc : "") + ".");
+  if (isPartial() && (S.teeth || []).length) a.push("Teeth to replace: " + S.teeth.join(", "));
+  if (one("mh")) a.push("MH: " + one("mh"));
+  a.push(...expectLines());
+  a.push(fixedLine("consent", CONSENT_TEXT));
+  out.push(a.filter(Boolean).join("\n"));
+
+  if (stageOn("3D scan")){
+    const s = ["** 3D Scan **"];
+    const sc = many("scans", SCANS);
+    if (sc.length) s.push(sent(andList(sc.map((x, i) => (i ? lc(x) : x) + (i === 0 && S.arch ? " (" + archLc() + ")" : "")))));
+    if (one("scanshade")) s.push("Tooth shade: " + one("scanshade"));
+    s.push(fixedLine("scantxt", SCAN_TEXT));
+    out.push(s.filter(Boolean).join("\n"));
+  }
+  if (stageOn("Primary impressions")) out.push(impLines("pi", "Primary Impressions").join("\n"));
+  if (stageOn("Secondary impressions")) out.push(impLines("si", "Secondary Impressions").join("\n"));
+
+  if (stageOn("Bite registration")){
+    const b = ["** Bite Registration **", fixedLine("rims", RIMS_TEXT)];
+    const reg = [one("jaw") ? "recorded in " + one("jaw") : "", one("regmat") ? "using " + lc(one("regmat")) : ""].filter(Boolean).join(" ");
+    if (reg) b.push(sent("Jaw relationship " + reg));
+    b.push(fixedLine("lines", LINES_TEXT));
+    if (one("shade")) b.push("Tooth shade: " + one("shade"));
+    if ((S.mould || "").trim()) b.push("Tooth mould: " + S.mould.trim());
+    out.push(b.filter(Boolean).join("\n"));
+  }
+  if (stageOn("Try-in")){
+    const t = ["** Try-in **"];
+    const chk = many("trychk", TRY_CHECKS);
+    t.push("Wax try-in" + (chk.length ? " checked for " + andList(chk.map(x => x === "OVD" ? x : x.toLowerCase())) : "") + ".");
+    if (one("tryhappy")) t.push(sent(one("tryhappy")) + (S.tryhappy === "Changes requested" && (S.trychg || "").trim() ? " " + sent(S.trychg) : ""));
+    if (one("trynext")) t.push(sent(one("trynext")));
+    out.push(t.join("\n"));
+  }
+  if (stageOn("Fit")){
+    const f = ["** Fit **"];
+    const chk = many("fitchk", FIT_CHECKS);
+    f.push("Denture" + (archList().length > 1 ? "s" : "") + " fitted" + (chk.length ? " and checked for " + andList(chk.map(x => x.toLowerCase())) : "") + ".");
+    f.push(fixedLine("pip", PIP_TEXT));
+    const adj = many("fitadj", ADJUST);
+    if (adj.length) f.push("Adjustments: " + andList(adj.map(lc)) + ".");
+    if (one("fithappy")) f.push(sent(one("fithappy")));
+    out.push(f.filter(Boolean).join("\n"));
+    const p = ["** Post-op Advice **", fixedLine("care", CARE_TEXT), fixedLine("night", NIGHT_TEXT), fixedLine("adapt", ADAPT_TEXT), fixedLine("sore", SORE_TEXT)];
+    if (isPartial()) p.push(fixedLine("partial", PARTIAL_TEXT));
+    if (S.imm) p.push(fixedLine("shrink", IMM_SHRINK_TEXT));
+    if (one("fitrev")) p.push("Review: " + lc(one("fitrev")) + ".");
+    if (p.filter(Boolean).length > 1) out.push(p.filter(Boolean).join("\n"));
+  }
+  if (stageOn("Review")){
+    const r = ["** Review **"];
+    const comp = many("comp", COMPLAINTS);
+    if (comp.length) r.push("Complaints: " + andList(comp.map(lc)) + ".");
+    if ((S.findings || "").trim()) r.push("Findings: " + sent(S.findings));
+    const adj = many("revadj", ADJUST);
+    if (adj.length) r.push("Adjustments: " + andList(adj.map(lc)) + ".");
+    if (one("revout")) r.push(sent(one("revout")));
+    out.push(r.join("\n"));
+  }
+  if (stageOn("Addition or repair")){
+    const r = ["** Addition or Repair **"];
+    const w = many("rep", REPAIRS);
+    if (w.length) r.push("Work: " + andList(w.map(lc)) + ((S.repteeth || []).length && (has("rep", "Tooth addition") || has("rep", "Clasp addition")) ? " (" + S.repteeth.join(", ") + ")" : "") + ".");
+    r.push(fixedLine("repimp", REPAIR_IMP_TEXT));
+    out.push(r.filter(Boolean).join("\n"));
+  }
+  if (stageOn("Reline")){
+    const r = ["** Reline **"];
+    if (one("rel")) r.push(sent(one("rel")));
+    if (S.rel === "Lab reline" || S.rel === "Lab rebase") r.push(fixedLine("relimp", RELINE_IMP_TEXT));
+    out.push(r.filter(Boolean).join("\n"));
+  }
+  const lb = ["** Lab and Next Appointment **"];
+  if (one("lab")) lb.push("Lab: " + one("lab"));
+  if ((S.labNotes || "").trim()) lb.push("Lab instructions: " + sent(S.labNotes));
+  if (one("next")) lb.push("Next appointment: " + lc(one("next")) + ".");
+  if (lb.length > 1) out.push(lb.join("\n"));
+  endNotes(out);
+  return out.join("\n\n");
+}
+function render(){
+  NEED = []; REQ_KEYS = new Set();
+  const f = $("form");
+  const secs = [apptSection()];
+  if (stageOn("3D scan")) secs.push(scanSection());
+  if (stageOn("Primary impressions")) secs.push(impSection("pi", "Primary impressions"));
+  if (stageOn("Secondary impressions")) secs.push(impSection("si", "Secondary impressions"));
+  if (stageOn("Bite registration")) secs.push(biteSection());
+  if (stageOn("Try-in")) secs.push(trySection());
+  if (stageOn("Fit")) secs.push(fitSection());
+  if (stageOn("Review")) secs.push(reviewSection());
+  if (stageOn("Addition or repair")) secs.push(repairSection());
+  if (stageOn("Reline")) secs.push(relineSection());
+  secs.push(labSection(), endSection());
+  f.replaceChildren(...secs);
+  renderNote(); showNeed();
+  if (pendingFocus){ const el2 = f.querySelector('[data-key="' + pendingFocus + '"]'); if (el2) el2.focus(); pendingFocus = null; }
+}
+/* ---------- actions ---------- */
+let tt;
+function toast(msg, ms){ const t = $("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(tt); tt = setTimeout(() => t.classList.remove("show"), ms || 1600); }
+async function copyNote(){
+  if (!needCheck()) return;
+  const txt = buildNote();
+  if (!txt){ toast("Nothing to copy yet"); return; }
+  let ok = false;
+  try { await navigator.clipboard.writeText(txt); ok = true; }
+  catch(e){
+    const ta = el("textarea"); ta.value = txt; ta.style.position = "fixed"; ta.style.opacity = "0"; document.body.append(ta); ta.select();
+    try { ok = document.execCommand("copy"); } catch(_){}
+    ta.remove();
+  }
+  toast(ok ? "Note copied" : "Couldn’t copy. Select the note and copy it manually.");
+}
+function newNote(){ fresh(); for (const k in collapsed) delete collapsed[k]; render(); window.scrollTo(0, 0); toast("New note started"); }
+
+$("copyBtn").onclick = $("mCopy").onclick = copyNote;
+$("newBtn").onclick = $("mNew").onclick = newNote;
+$("mView").onclick = () => $("note").scrollIntoView({ behavior: "smooth", block: "start" });
+document.addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && e.key === "Enter"){ e.preventDefault(); copyNote(); } });
+
+fresh(); render();
+window.DN_apply = function(){
+  const oldC = CLINICIAN, oldD = defaultDA();
+  loadSettings();
+  if (!S.clin || S.clin === oldC) S.clin = CLINICIAN;
+  if (!S.da || S.da === oldD || !DA_LIST.includes(S.da)) S.da = defaultDA();
+  render();
+};
+
+})();
+</script>
+</body>
+</html>
