@@ -142,9 +142,13 @@ iframe.on{display:block}
     const fallback = () => { cout.focus(); cout.select(); let ok = false; try { ok = document.execCommand("copy"); } catch(e){} flash(ok ? "Copied" : "Select the message above and copy it"); };
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(cout.value).then(() => flash("Copied"), fallback); else fallback();
   };
-  document.getElementById("cclear").onclick = () => {
-    if (!confirm("Remove all " + wording.length + " saved wording changes from this browser?")) return;
-    wording = []; storeW(); renderChanges(); rerender();
+  /* two-step confirm on the button itself: previews often block confirm() pop-ups */
+  const cclear = document.getElementById("cclear"); let armed = null;
+  function disarm(){ clearTimeout(armed); armed = null; cclear.textContent = "Clear all"; }
+  cclear.onclick = () => {
+    if (!armed){ cclear.textContent = "Tap again to clear " + wording.length; armed = setTimeout(disarm, 4000); return; }
+    disarm(); wording = []; const ok = storeW(); renderChanges(); rerender();
+    if (!ok) flash("Cleared for now, but this browser may bring them back on reload");
   };
 
   /* EDITOR-ONLY END */
