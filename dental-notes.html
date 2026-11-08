@@ -237,10 +237,10 @@ const SHADES = [&quot;A1&quot;,&quot;A2&quot;,&quot;A3&quot;,&quot;A3.5&quot;,&q
 const BRANDS = [&quot;3M Filtek&quot;,&quot;Empress Direct&quot;,&quot;Other&quot;];
 const OCC_AFTER = [&quot;and adjusted, patient comfortable with bite&quot;,&quot;no adjustment required&quot;,&quot;Other&quot;];
 
-const POST_BASE = &quot;Patient advised to return if there are any problems. Advised some sensitivity is normal however this should settle. Any prolonged sensitivity or symptoms and the tooth may require further treatment e.g. RCT or XLA.&quot;;
-const POST_PULP = &quot;Post op pain warning given as decay was close to pulp. Analgesics advised if painful. If pain does not settle after a couple of weeks then RCT/XLA may be necessary.&quot;;
-const POST_GIC = &quot;Patient is aware that GIC is often a short-medium term filling material.&quot;;
-const POST_COMP = &quot;Advised that some sensitivity is normal. Should settle down in a couple of days.&quot;;
+const POST_BASE = &quot;Advised to get in touch if any problems arise. Explained that mild sensitivity can occur and usually settles, but sensitivity or symptoms that persist may mean the tooth needs further treatment such as RCT or XLA.&quot;;
+const POST_PULP = &quot;Warned of possible post-op pain as the caries was close to the pulp. Advised pain relief as needed, and that if pain has not settled within a couple of weeks, RCT or XLA may be needed.&quot;;
+const POST_GIC = &quot;Patient understands that GIC is generally a short to medium term restoration.&quot;;
+const POST_COMP = &quot;Advised that some sensitivity is expected and should ease within a few days.&quot;;
 
 /* ---------- state ---------- */
 let S = {}, R = [], pendingFocus = null;
@@ -975,7 +975,7 @@ function apptSection(){
 function mhSection(){
   return section(&quot;mh&quot;, &quot;Medical history&quot;, [
     row(&quot;MH checked&quot;, chips(&quot;mh&quot;, MH_LIST)),
-    row(&quot;Relevant medication&quot;, chips(&quot;meds&quot;, MEDS, true), &quot;pick any&quot;),
+    row(&quot;Relevant history&quot;, chips(&quot;meds&quot;, MEDS, true), &quot;pick any&quot;),
     row(&quot;Smoker status&quot;, chips(&quot;smoker&quot;, SMOKER))
   ]);
 }
@@ -1092,7 +1092,7 @@ function buildNote(){
   const m = [&quot;** Medical History **&quot;];
   if (one(&quot;mh&quot;)) m.push(&quot;MH checked: &quot; + one(&quot;mh&quot;));
   const meds = many(&quot;meds&quot;, MEDS);
-  if (meds.length) m.push(&quot;Relevant medication: &quot; + meds.join(&quot;; &quot;) + &quot;.&quot;);
+  if (meds.length) m.push(&quot;Relevant history: &quot; + meds.join(&quot;; &quot;) + &quot;.&quot;);
   if (one(&quot;smoker&quot;)) m.push(&quot;Smoker status: &quot; + one(&quot;smoker&quot;));
   if (m.length &gt; 1) out.push(m.join(&quot;\n&quot;));
 

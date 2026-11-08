@@ -23,7 +23,7 @@ Dental note builder used chairside by a general dentist in Auckland, New Zealand
 ## Defaults the dentist asked for
 - LA: Articaine 4% 1:100,000 first and preselected; 1.8ml cartridges.
 - C/O Nil; MH checked No changes.
-- Filling: one tooth per restoration with per-tooth surfaces; moisture control cotton wool rolls + HVS; liner not required; Greater Curve standard band with stainless steel and contact opening drilled ticked, ultra thin and wedge unticked; composite brand 3M Filtek (Empress Direct as alternative) plus the flowable base and snowplough protocol line.
+- Filling: one tooth per restoration with per-tooth surfaces; moisture control cotton wool rolls + HVS; liner not required; Greater Curve standard band with stainless steel and contact opening ticked, ultra thin and wedge unticked; composite brand 3M Filtek (Empress Direct as alternative) plus the flowable base and snowplough protocol line; amalgam adds a ticked "condensed and burnished" line; no GIC follow-up question.
 - Extraction: multiple teeth with an optional per-tooth split.
 - Indirect: multiple teeth with an optional per-tooth restoration and material; occlusal scheme hidden unless ticked; fit protocol as tick boxes.
 - Endo: one template covering first visit or continuing treatment, with an interim dressing tick box; ProTaper Next default with per-system final shaping sizes; single cone and AH Plus defaults.

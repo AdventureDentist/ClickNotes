@@ -365,7 +365,7 @@ function apptSection(){
 function mhSection(){
   return section("mh", "Medical history", [
     row("MH checked", chips("mh", MH_LIST)),
-    row("Relevant medication", chips("meds", MEDS, true), "pick any"),
+    row("Relevant history", chips("meds", MEDS, true), "pick any"),
     row("Smoker status", chips("smoker", SMOKER))
   ]);
 }
@@ -482,7 +482,7 @@ function buildNote(){
   const m = ["** Medical History **"];
   if (one("mh")) m.push("MH checked: " + one("mh"));
   const meds = many("meds", MEDS);
-  if (meds.length) m.push("Relevant medication: " + meds.join("; ") + ".");
+  if (meds.length) m.push("Relevant history: " + meds.join("; ") + ".");
   if (one("smoker")) m.push("Smoker status: " + one("smoker"));
   if (m.length > 1) out.push(m.join("\n"));
 
